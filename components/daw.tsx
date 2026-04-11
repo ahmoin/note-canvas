@@ -1,0 +1,49 @@
+"use client";
+
+import * as React from "react";
+import { ChannelRack } from "@/components/channel-rack";
+import { Mixer } from "@/components/mixer";
+import { PatternList } from "@/components/pattern-list";
+import { PianoRoll } from "@/components/piano-roll";
+import { Playlist } from "@/components/playlist";
+import { TracksView } from "@/components/tracks-view";
+import { TransportBar } from "@/components/transport-bar";
+import { ViewTabs } from "@/components/view-tabs";
+import { useDAWStore } from "@/lib/store";
+
+export function DAW() {
+	const { activeView, togglePlay } = useDAWStore();
+
+	React.useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (
+				e.target instanceof HTMLInputElement ||
+				e.target instanceof HTMLTextAreaElement
+			)
+				return;
+			if (e.code === "Space") {
+				e.preventDefault();
+				togglePlay();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [togglePlay]);
+
+	return (
+		<div className="flex h-screen flex-col overflow-hidden bg-background">
+			<TransportBar />
+			<ViewTabs />
+			<div className="flex min-h-0 flex-1 overflow-hidden">
+				<PatternList />
+				<div className="flex flex-1 flex-col overflow-hidden">
+					{activeView === "tracks" && <TracksView />}
+					{activeView === "piano-roll" && <PianoRoll />}
+					{activeView === "mixer" && <Mixer />}
+					{activeView === "playlist" && <Playlist />}
+				</div>
+			</div>
+			<ChannelRack />
+		</div>
+	);
+}
