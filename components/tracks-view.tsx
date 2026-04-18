@@ -31,11 +31,112 @@ function ClipPreview({ pattern }: { pattern: Pattern }) {
 	);
 }
 
-function Knob({ label }: { label: string }) {
+const KNOB_SIZE = 28;
+const KNOB_R = 11;
+const KNOB_CX = KNOB_SIZE / 2;
+const KNOB_CY = KNOB_SIZE / 2;
+
+function knobXY(deg: number) {
+	return {
+		x: KNOB_CX + KNOB_R * Math.sin((deg * Math.PI) / 180),
+		y: KNOB_CY - KNOB_R * Math.cos((deg * Math.PI) / 180),
+	};
+}
+
+function Knob({
+	label,
+	value,
+	min = 0,
+	max = 100,
+	onChange,
+}: {
+	label: string;
+	value: number;
+	min?: number;
+	max?: number;
+	onChange: (v: number) => void;
+}) {
+	const dragRef = React.useRef<{ y: number; value: number } | null>(null);
+
+	const ratio = (value - min) / (max - min);
+	const angle = -135 + ratio * 270;
+	const span = angle + 135;
+
+	const startPt = knobXY(-135);
+	const bgEndPt = knobXY(135);
+	const valEndPt = knobXY(angle);
+
+	const fmt = (n: number) => n.toFixed(2);
+	const bgPath = `M ${fmt(startPt.x)} ${fmt(startPt.y)} A ${KNOB_R} ${KNOB_R} 0 1 1 ${fmt(bgEndPt.x)} ${fmt(bgEndPt.y)}`;
+	const valPath =
+		ratio > 0.002
+			? `M ${fmt(startPt.x)} ${fmt(startPt.y)} A ${KNOB_R} ${KNOB_R} 0 ${span > 180 ? 1 : 0} 1 ${fmt(valEndPt.x)} ${fmt(valEndPt.y)}`
+			: null;
+
+	const displayValue =
+		label === "PAN"
+			? value === 0
+				? "C"
+				: value > 0
+					? `R${Math.round(value)}`
+					: `L${Math.round(-value)}`
+			: `${Math.round(value)}`;
+
+	const onMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
+		dragRef.current = { y: e.clientY, value };
+		const onMouseMove = (mv: MouseEvent) => {
+			if (!dragRef.current) return;
+			const delta = (dragRef.current.y - mv.clientY) / 100;
+			onChange(
+				Math.max(
+					min,
+					Math.min(max, dragRef.current.value + delta * (max - min)),
+				),
+			);
+		};
+		const onMouseUp = () => {
+			dragRef.current = null;
+			window.removeEventListener("mousemove", onMouseMove);
+			window.removeEventListener("mouseup", onMouseUp);
+		};
+		window.addEventListener("mousemove", onMouseMove);
+		window.addEventListener("mouseup", onMouseUp);
+	};
+
 	return (
-		<div className="group relative flex size-7 cursor-pointer items-center justify-center rounded-full bg-[#2a1212] shadow-inner ring-1 ring-red-900/60">
-			<div className="h-2.5 w-[2px] -translate-y-[1px] rounded-full bg-red-300/80" />
-			<span className="absolute -bottom-3.5 text-[8px] text-red-400/60 opacity-0 group-hover:opacity-100">
+		<div
+			className="group relative cursor-ns-resize select-none"
+			style={{ width: KNOB_SIZE, height: KNOB_SIZE }}
+			onMouseDown={onMouseDown}
+			title={`${label}: ${displayValue}`}
+		>
+			<svg width={KNOB_SIZE} height={KNOB_SIZE} className="absolute inset-0">
+				<path
+					d={bgPath}
+					fill="none"
+					stroke="rgba(255,255,255,0.08)"
+					strokeWidth="2"
+					strokeLinecap="round"
+				/>
+				{valPath && (
+					<path
+						d={valPath}
+						fill="none"
+						stroke="rgba(239,68,68,0.65)"
+						strokeWidth="2"
+						strokeLinecap="round"
+					/>
+				)}
+			</svg>
+			<div className="absolute inset-[4px] rounded-full bg-gradient-to-b from-[#2e1111] to-[#150808] shadow-[inset_0_1px_3px_rgba(0,0,0,0.8),inset_0_-1px_1px_rgba(255,255,255,0.04)] ring-1 ring-black/70" />
+			<div
+				className="absolute inset-[4px] flex items-start justify-center pt-[3px]"
+				style={{ transform: `rotate(${angle}deg)` }}
+			>
+				<div className="h-[7px] w-[2px] rounded-full bg-red-200/90" />
+			</div>
+			<span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] text-red-400/60 opacity-0 group-hover:opacity-100">
 				{label}
 			</span>
 		</div>
@@ -62,7 +163,16 @@ function rulerBeats() {
 const RULER_BEATS = rulerBeats();
 
 export function TracksView() {
-	const { pattern, isPlaying, bpm, playStartAudioTime } = useDAWStore();
+	const {
+		pattern,
+		isPlaying,
+		bpm,
+		playStartAudioTime,
+		trackVolumes,
+		trackPans,
+		setTrackVolume,
+		setTrackPan,
+	} = useDAWStore();
 	const playheadRef = React.useRef<HTMLDivElement>(null);
 	const rafRef = React.useRef<number | null>(null);
 	const bpmRef = React.useRef(bpm);
@@ -120,8 +230,18 @@ export function TracksView() {
 								</span>
 							</div>
 							<div className="flex items-center gap-2">
-								<Knob label="VOL" />
-								<Knob label="PAN" />
+								<Knob
+									label="PAN"
+									value={trackPans[ti]}
+									min={-50}
+									max={50}
+									onChange={(v) => setTrackPan(ti, v)}
+								/>
+								<Knob
+									label="VOL"
+									value={trackVolumes[ti]}
+									onChange={(v) => setTrackVolume(ti, v)}
+								/>
 								<div className="size-2 rounded-full bg-white/20" />
 								<Headphones className="size-3.5 text-red-400/70" />
 								<div className="size-2 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80]" />
