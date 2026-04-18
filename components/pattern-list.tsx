@@ -11,15 +11,13 @@ import {
 	MusicNoteIcon,
 	MusicNotesIcon,
 	PianoKeysIcon,
-	PlusIcon,
 	SlidersHorizontalIcon,
 	SpeakerHighIcon,
 	WaveformIcon,
 	WindIcon,
 } from "@phosphor-icons/react";
-import * as React from "react";
+import type * as React from "react";
 import { LiaDrumSolid } from "react-icons/lia";
-import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -59,8 +57,13 @@ const CONTENT: Record<Tab, Item[]> = {
 	],
 };
 
-export function PatternList() {
-	const [tab, setTab] = React.useState<Tab>("sounds");
+export function PatternList({
+	tab,
+	setTab,
+}: {
+	tab: Tab;
+	setTab: (t: Tab) => void;
+}) {
 	const addTrack = useDAWStore((s) => s.addTrack);
 
 	const handleDragStart = (e: React.DragEvent, name: string) => {
@@ -70,13 +73,6 @@ export function PatternList() {
 
 	return (
 		<div className="flex w-44 shrink-0 flex-col border-r bg-background">
-			<div className="flex h-8 shrink-0 items-center justify-between border-b px-2">
-				<span className="text-xs font-medium capitalize">{tab}</span>
-				<Button variant="ghost" size="icon" className="size-6">
-					<PlusIcon className="size-3" />
-				</Button>
-			</div>
-
 			<div className="flex shrink-0 border-b">
 				{TABS.map((t) => (
 					<button

@@ -15,6 +15,9 @@ import { useDAWStore } from "@/lib/store";
 export default function Page() {
 	const { activeView, togglePlay } = useDAWStore();
 	const [showPanel, setShowPanel] = React.useState(true);
+	const [panelTab, setPanelTab] = React.useState<
+		"sounds" | "instruments" | "effects"
+	>("sounds");
 
 	React.useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,7 +41,7 @@ export default function Page() {
 				<TransportBar />
 				<ViewTabs />
 				<div className="flex min-h-0 flex-1 overflow-hidden">
-					{showPanel && <PatternList />}
+					{showPanel && <PatternList tab={panelTab} setTab={setPanelTab} />}
 					<div className="flex flex-1 flex-col overflow-hidden">
 						{activeView === "tracks" && (
 							<TracksView
