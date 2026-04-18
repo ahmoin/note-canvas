@@ -30,6 +30,18 @@ export type FlavorPalette = Record<
 >;
 
 export const FLAVORS: Flavor[] = ["latte", "frappe", "macchiato", "mocha"];
+export const TRACK_PALETTE = [
+	"pink",
+	"teal",
+	"blue",
+	"green",
+	"mauve",
+	"peach",
+	"sky",
+	"lavender",
+	"red",
+	"flamingo",
+] as const satisfies SwatchKey[];
 export const SWATCH_KEYS: SwatchKey[] = [
 	"rosewater",
 	"flamingo",

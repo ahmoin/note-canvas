@@ -10,7 +10,7 @@ import * as React from "react";
 import { ClipMenu } from "@/components/clip-menu";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
-import { FLAVOR_VARS } from "@/lib/catppuccin";
+import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
 import { getAudioCtx } from "@/lib/drums";
 import { CHANNELS, type Pattern, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -201,18 +201,6 @@ export function TracksView({
 	} = useDAWStore();
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
-	const TRACK_PALETTE = [
-		"pink",
-		"teal",
-		"blue",
-		"green",
-		"mauve",
-		"peach",
-		"sky",
-		"lavender",
-		"red",
-		"flamingo",
-	] as const;
 	const trackColors = tracks.map(
 		(_, ti) => vars[TRACK_PALETTE[ti % TRACK_PALETTE.length]],
 	);

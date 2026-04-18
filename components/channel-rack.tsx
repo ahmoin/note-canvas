@@ -3,6 +3,8 @@
 import { PlusIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useFlavor } from "@/hooks/use-flavor";
+import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
 import { DRUM_PLAYERS, getAudioCtx } from "@/lib/drums";
 import { CHANNELS, STEPS, type TrackItem, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -15,11 +17,13 @@ function StepButton({
 	active,
 	isCaret,
 	beat,
+	color,
 	onClick,
 }: {
 	active: boolean;
 	isCaret: boolean;
 	beat: number;
+	color: string;
 	onClick: () => void;
 }) {
 	const inactiveBg =
@@ -31,8 +35,15 @@ function StepButton({
 			<div
 				className={cn(
 					"relative h-[27px] w-[17px] overflow-hidden rounded-[3px] px-[2px] py-[5px] transition-colors",
-					active ? "bg-[#D61919] hover:bg-[#e62020]" : inactiveBg,
+					!active && inactiveBg,
 				)}
+				style={
+					active
+						? {
+								backgroundColor: `color-mix(in srgb, ${color} 80%, transparent)`,
+							}
+						: undefined
+				}
 			>
 				<div
 					className={cn(
@@ -61,6 +72,10 @@ export function ChannelRack() {
 	mutedTracksRef.current = mutedTracks;
 	const patternsRef = React.useRef(patterns);
 	patternsRef.current = patterns;
+
+	const flavor = useFlavor();
+	const vars = FLAVOR_VARS[flavor];
+	const trackColor = vars[TRACK_PALETTE[activeTrack % TRACK_PALETTE.length]];
 
 	const pattern = patterns[activeTrack] ?? patterns[0];
 	const [caretStep, setCaretStep] = React.useState(0);
@@ -171,8 +186,8 @@ export function ChannelRack() {
 							</div>
 						))}
 						<div
-							className="pointer-events-none absolute bottom-0 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-[#D61919]"
-							style={{ left: triangleLeft }}
+							className="pointer-events-none absolute bottom-0 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent"
+							style={{ borderTopColor: trackColor, left: triangleLeft }}
 						/>
 					</div>
 
@@ -187,6 +202,7 @@ export function ChannelRack() {
 									active={active}
 									isCaret={si === caretStep}
 									beat={Math.floor(si / 4)}
+									color={trackColor}
 									onClick={() => toggle(ch, si)}
 								/>
 							))}
