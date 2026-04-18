@@ -17,6 +17,7 @@ export function ViewTabs() {
 		<div className="flex h-9 shrink-0 items-end gap-0.5 border-b bg-background px-3">
 			{VIEWS.map((v) => (
 				<button
+					type="button"
 					key={v.id}
 					onClick={() => setActiveView(v.id)}
 					className={cn(
