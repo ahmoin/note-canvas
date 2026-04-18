@@ -262,7 +262,10 @@ export function TracksView() {
 							style={{ borderLeftColor: red }}
 						>
 							<div className="flex items-center gap-1.5">
-								<PlayIcon className="size-3" style={{ fill: red, color: red }} />
+								<PlayIcon
+									className="size-3"
+									style={{ fill: red, color: red }}
+								/>
 								<span
 									className="text-xs font-medium"
 									style={{ color: `color-mix(in srgb, ${red} 60%, white)` }}

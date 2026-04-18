@@ -1,12 +1,31 @@
 "use client";
 
-import { PlusIcon } from "@phosphor-icons/react";
+import {
+	ArrowsInSimpleIcon,
+	CircleIcon,
+	ClockCountdownIcon,
+	GuitarIcon,
+	HandsClappingIcon,
+	LightningIcon,
+	MetronomeIcon,
+	MusicNoteIcon,
+	MusicNotesIcon,
+	PianoKeysIcon,
+	PlusIcon,
+	SlidersHorizontalIcon,
+	SpeakerHighIcon,
+	WaveformIcon,
+	WindIcon,
+} from "@phosphor-icons/react";
 import * as React from "react";
+import { LiaDrumSolid } from "react-icons/lia";
 import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type Tab = "sounds" | "instruments" | "effects";
+
+type Item = { name: string; icon: React.ElementType };
 
 const TABS: { id: Tab; label: string }[] = [
 	{ id: "sounds", label: "Sounds" },
@@ -14,10 +33,30 @@ const TABS: { id: Tab; label: string }[] = [
 	{ id: "effects", label: "Effects" },
 ];
 
-const CONTENT: Record<Tab, string[]> = {
-	sounds: ["808 Kick", "Snare Crack", "Hi-Hat", "Clap", "Perc"],
-	instruments: ["Synth Lead", "Bass Synth", "Pad", "Pluck"],
-	effects: ["Reverb", "Delay", "Distortion", "Compressor", "EQ"],
+const CONTENT: Record<Tab, Item[]> = {
+	sounds: [
+		{ name: "808 Kick", icon: CircleIcon },
+		{ name: "Snare Crack", icon: LiaDrumSolid },
+		{ name: "Hi-Hat", icon: MusicNoteIcon },
+		{ name: "Clap", icon: HandsClappingIcon },
+		{ name: "Perc", icon: MetronomeIcon },
+	],
+	instruments: [
+		{ name: "Bass", icon: GuitarIcon },
+		{ name: "Guitar", icon: GuitarIcon },
+		{ name: "Keys", icon: PianoKeysIcon },
+		{ name: "Strings", icon: MusicNotesIcon },
+		{ name: "Synths", icon: WaveformIcon },
+		{ name: "Tuned Percussion", icon: MetronomeIcon },
+		{ name: "Wind & Brass", icon: WindIcon },
+	],
+	effects: [
+		{ name: "Reverb", icon: SpeakerHighIcon },
+		{ name: "Delay", icon: ClockCountdownIcon },
+		{ name: "Distortion", icon: LightningIcon },
+		{ name: "Compressor", icon: ArrowsInSimpleIcon },
+		{ name: "EQ", icon: SlidersHorizontalIcon },
+	],
 };
 
 export function PatternList() {
@@ -57,16 +96,17 @@ export function PatternList() {
 			</div>
 
 			<div className="flex-1 overflow-y-auto">
-				{CONTENT[tab].map((name, i) => (
+				{CONTENT[tab].map(({ name, icon: Icon }, i) => (
 					<button
 						key={i}
 						type="button"
 						draggable
 						onDragStart={(e) => handleDragStart(e, name)}
 						onDoubleClick={() => addTrack(name, tab)}
-						className="flex w-full cursor-grab items-center px-2 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing"
+						className="flex w-full cursor-grab items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing"
 						title="Drag to track or double-click to add"
 					>
+						<Icon className="size-3.5 shrink-0 text-muted-foreground" />
 						{name}
 					</button>
 				))}
