@@ -20,16 +20,22 @@ import {
 } from "@phosphor-icons/react";
 import * as React from "react";
 import { LiaDrumSolid } from "react-icons/lia";
-import { useDAWStore } from "@/lib/store";
+import { type TrackSubtype, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type Tab = "sounds" | "instruments" | "effects";
 
-type FlatItem = { kind: "item"; name: string; icon: React.ElementType };
+type FlatItem = {
+	kind: "item";
+	name: string;
+	icon: React.ElementType;
+	subtype: TrackSubtype;
+};
 type GroupItem = {
 	kind: "group";
 	name: string;
 	icon: React.ElementType;
+	subtype: TrackSubtype;
 	children: FlatItem[];
 };
 type ListEntry = FlatItem | GroupItem;
@@ -42,62 +48,102 @@ const TABS: { id: Tab; label: string }[] = [
 
 const CONTENT: Record<Tab, ListEntry[]> = {
 	sounds: [
-		{ kind: "item", name: "808 Kick", icon: CircleIcon },
-		{ kind: "item", name: "Snare Crack", icon: LiaDrumSolid },
-		{ kind: "item", name: "Hi-Hat", icon: MusicNoteIcon },
-		{ kind: "item", name: "Clap", icon: HandsClappingIcon },
-		{ kind: "item", name: "Perc", icon: MetronomeIcon },
+		{ kind: "item", name: "808 Kick", icon: CircleIcon, subtype: "sound" },
+		{ kind: "item", name: "Snare Crack", icon: LiaDrumSolid, subtype: "sound" },
+		{ kind: "item", name: "Hi-Hat", icon: MusicNoteIcon, subtype: "sound" },
+		{ kind: "item", name: "Clap", icon: HandsClappingIcon, subtype: "sound" },
+		{ kind: "item", name: "Perc", icon: MetronomeIcon, subtype: "sound" },
 	],
 	instruments: [
-		{ kind: "item", name: "Audio Track", icon: WaveformIcon },
+		{ kind: "item", name: "Audio Track", icon: WaveformIcon, subtype: "audio" },
 		{
 			kind: "group",
 			name: "WaveInstrument",
 			icon: MusicNotesIcon,
+			subtype: "wave",
 			children: [
-				{ kind: "item", name: "Bass", icon: GuitarIcon },
-				{ kind: "item", name: "Guitar", icon: GuitarIcon },
-				{ kind: "item", name: "Keys", icon: PianoKeysIcon },
-				{ kind: "item", name: "Strings", icon: MusicNotesIcon },
-				{ kind: "item", name: "Synths", icon: WaveformIcon },
-				{ kind: "item", name: "Tuned Percussion", icon: MetronomeIcon },
-				{ kind: "item", name: "Wind & Brass", icon: WindIcon },
+				{ kind: "item", name: "Bass", icon: GuitarIcon, subtype: "wave" },
+				{ kind: "item", name: "Guitar", icon: GuitarIcon, subtype: "wave" },
+				{ kind: "item", name: "Keys", icon: PianoKeysIcon, subtype: "wave" },
+				{
+					kind: "item",
+					name: "Strings",
+					icon: MusicNotesIcon,
+					subtype: "wave",
+				},
+				{ kind: "item", name: "Synths", icon: WaveformIcon, subtype: "wave" },
+				{
+					kind: "item",
+					name: "Tuned Percussion",
+					icon: MetronomeIcon,
+					subtype: "wave",
+				},
+				{ kind: "item", name: "Wind & Brass", icon: WindIcon, subtype: "wave" },
 			],
 		},
-		{ kind: "item", name: "Drum Track", icon: LiaDrumSolid },
-		{ kind: "item", name: "Slicer", icon: ScissorsIcon },
-		{ kind: "item", name: "Sampler", icon: SpeakerHighIcon },
+		{ kind: "item", name: "Drum Track", icon: LiaDrumSolid, subtype: "drum" },
+		{ kind: "item", name: "Slicer", icon: ScissorsIcon, subtype: "slicer" },
+		{
+			kind: "item",
+			name: "Sampler",
+			icon: SpeakerHighIcon,
+			subtype: "sampler",
+		},
 	],
 	effects: [
-		{ kind: "item", name: "Reverb", icon: SpeakerHighIcon },
-		{ kind: "item", name: "Delay", icon: ClockCountdownIcon },
-		{ kind: "item", name: "Distortion", icon: LightningIcon },
-		{ kind: "item", name: "Compressor", icon: ArrowsInSimpleIcon },
-		{ kind: "item", name: "EQ", icon: SlidersHorizontalIcon },
+		{ kind: "item", name: "Reverb", icon: SpeakerHighIcon, subtype: "effect" },
+		{
+			kind: "item",
+			name: "Delay",
+			icon: ClockCountdownIcon,
+			subtype: "effect",
+		},
+		{
+			kind: "item",
+			name: "Distortion",
+			icon: LightningIcon,
+			subtype: "effect",
+		},
+		{
+			kind: "item",
+			name: "Compressor",
+			icon: ArrowsInSimpleIcon,
+			subtype: "effect",
+		},
+		{
+			kind: "item",
+			name: "EQ",
+			icon: SlidersHorizontalIcon,
+			subtype: "effect",
+		},
 	],
 };
 
 function Item({
 	name,
 	icon: Icon,
-	tab,
+	subtype,
 	indent,
 	onDragStart,
 	onDoubleClick,
 }: {
 	name: string;
 	icon: React.ElementType;
-	tab: Tab;
+	subtype: TrackSubtype;
 	indent?: boolean;
-	onDragStart: (e: React.DragEvent, name: string) => void;
-	onDoubleClick: (name: string) => void;
+	onDragStart: (
+		e: React.DragEvent,
+		name: string,
+		subtype: TrackSubtype,
+	) => void;
+	onDoubleClick: (name: string, subtype: TrackSubtype) => void;
 }) {
 	return (
 		<button
 			type="button"
 			draggable
-			onDragStart={(e) => onDragStart(e, name)}
-			onDoubleClick={() => onDoubleClick(name)}
+			onDragStart={(e) => onDragStart(e, name, subtype)}
+			onDoubleClick={() => onDoubleClick(name, subtype)}
 			className={cn(
 				"flex w-full cursor-grab items-center gap-2 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing",
 				indent ? "pl-6 pr-2" : "px-2",
@@ -130,8 +176,15 @@ export function PatternList({
 			return next;
 		});
 
-	const handleDragStart = (e: React.DragEvent, name: string) => {
-		e.dataTransfer.setData("text/plain", JSON.stringify({ name, type: tab }));
+	const handleDragStart = (
+		e: React.DragEvent,
+		name: string,
+		subtype: TrackSubtype,
+	) => {
+		e.dataTransfer.setData(
+			"text/plain",
+			JSON.stringify({ name, type: tab, subtype }),
+		);
 		e.dataTransfer.effectAllowed = "copy";
 	};
 
@@ -163,9 +216,9 @@ export function PatternList({
 								key={i}
 								name={entry.name}
 								icon={entry.icon}
-								tab={tab}
+								subtype={entry.subtype}
 								onDragStart={handleDragStart}
-								onDoubleClick={(name) => addTrack(name, tab)}
+								onDoubleClick={(name, subtype) => addTrack(name, tab, subtype)}
 							/>
 						);
 					}
@@ -193,10 +246,12 @@ export function PatternList({
 										key={ci}
 										name={child.name}
 										icon={child.icon}
-										tab={tab}
+										subtype={child.subtype}
 										indent
 										onDragStart={handleDragStart}
-										onDoubleClick={(name) => addTrack(name, tab)}
+										onDoubleClick={(name, subtype) =>
+											addTrack(name, tab, subtype)
+										}
 									/>
 								))}
 						</div>

@@ -10,10 +10,13 @@ import { ThemeSelector } from "@/components/theme-selector";
 import { TracksView } from "@/components/tracks-view";
 import { TransportBar } from "@/components/transport-bar";
 import { ViewTabs } from "@/components/view-tabs";
+import { usePlayback } from "@/hooks/use-playback";
 import { useDAWStore } from "@/lib/store";
 
 export default function Page() {
-	const { activeView, togglePlay } = useDAWStore();
+	usePlayback();
+	const { activeView, togglePlay, tracks, activeTrack } = useDAWStore();
+	const activeSubtype = tracks[activeTrack]?.subtype;
 	const [showPanel, setShowPanel] = React.useState(true);
 	const [panelTab, setPanelTab] = React.useState<
 		"sounds" | "instruments" | "effects"
@@ -54,7 +57,7 @@ export default function Page() {
 						{activeView === "playlist" && <Playlist />}
 					</div>
 				</div>
-				<ChannelRack />
+				{activeSubtype === "wave" ? <PianoRoll /> : <ChannelRack />}
 				<ThemeSelector />
 			</div>
 		</>

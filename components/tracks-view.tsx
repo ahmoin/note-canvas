@@ -12,14 +12,68 @@ import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
 import { getAudioCtx } from "@/lib/drums";
-import { CHANNELS, type Pattern, useDAWStore } from "@/lib/store";
+import {
+	CHANNELS,
+	type Pattern,
+	type TrackSubtype,
+	useDAWStore,
+} from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const BEAT_PX = 32;
 const BAR_PX = BEAT_PX * 4;
 const TOTAL_BARS = 16;
 
-function ClipPreview({ pattern, red }: { pattern: Pattern; red: string }) {
+function ClipPreview({
+	pattern,
+	red,
+	subtype,
+	pianoNotes,
+}: {
+	pattern: Pattern;
+	red: string;
+	subtype: TrackSubtype;
+	pianoNotes: Record<string, boolean>;
+}) {
+	if (subtype === "wave") {
+		const noteKeys = Object.keys(pianoNotes);
+		if (noteKeys.length === 0) {
+			return (
+				<div className="flex h-full w-full items-center justify-center">
+					<span className="text-[8px] text-white/20">no notes</span>
+				</div>
+			);
+		}
+		const rows = noteKeys.map((k) => parseInt(k.split("-")[0]));
+		const subs = noteKeys.map((k) => parseInt(k.split("-")[1]));
+		const minRow = Math.min(...rows),
+			maxRow = Math.max(...rows);
+		const maxSub = Math.max(...subs);
+		const rowSpan = Math.max(maxRow - minRow + 1, 1);
+		return (
+			<div className="relative h-full w-full overflow-hidden px-1 py-1">
+				{noteKeys.map((k) => {
+					const r = parseInt(k.split("-")[0]);
+					const s = parseInt(k.split("-")[1]);
+					const top = ((r - minRow) / rowSpan) * 100;
+					const left = (s / Math.max(maxSub + 1, 64)) * 100;
+					return (
+						<div
+							key={k}
+							className="absolute h-[2px] rounded-[1px]"
+							style={{
+								top: `${top}%`,
+								left: `${left}%`,
+								width: "3%",
+								backgroundColor: `color-mix(in srgb, ${red} 85%, transparent)`,
+							}}
+						/>
+					);
+				})}
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex h-full w-full flex-col gap-px px-1.5 py-1.5">
 			{CHANNELS.map((ch) => (
@@ -192,6 +246,7 @@ export function TracksView({
 		trackPans,
 		soloTrack,
 		mutedTracks,
+		pianoNotes,
 		setTrackVolume,
 		setTrackPan,
 		setSoloTrack,
@@ -213,8 +268,10 @@ export function TracksView({
 		e.preventDefault();
 		setIsDragOver(false);
 		try {
-			const { name, type } = JSON.parse(e.dataTransfer.getData("text/plain"));
-			addTrack(name, type);
+			const { name, type, subtype } = JSON.parse(
+				e.dataTransfer.getData("text/plain"),
+			);
+			addTrack(name, type, subtype);
 		} catch {}
 	};
 
@@ -236,8 +293,6 @@ export function TracksView({
 	React.useEffect(() => {
 		if (!isPlaying || playStartAudioTime == null) {
 			if (rafRef.current) cancelAnimationFrame(rafRef.current);
-			if (playheadRef.current)
-				playheadRef.current.style.transform = "translateX(0px)";
 			return;
 		}
 
@@ -407,7 +462,12 @@ export function TracksView({
 									onClick={(e) => handleClipClick(ti, e)}
 								>
 									<div className="absolute inset-0">
-										<ClipPreview pattern={patterns[ti]} red={color} />
+										<ClipPreview
+											pattern={patterns[ti]}
+											red={color}
+											subtype={tracks[ti].subtype}
+											pianoNotes={pianoNotes[ti] ?? {}}
+										/>
 									</div>
 									<span
 										className="absolute left-1.5 top-1 text-[9px] font-medium"

@@ -120,6 +120,32 @@ export function playRide(time: number) {
 	src.stop(time + 0.6);
 }
 
+const OCTAVES_LIST = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1];
+const NOTE_SEMITONES = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+
+export function rowToFreq(row: number): number {
+	const oct = OCTAVES_LIST[Math.floor(row / 12)] ?? 0;
+	const semitone = NOTE_SEMITONES[row % 12] ?? 0;
+	const midi = (oct + 1) * 12 + semitone;
+	return 440 * 2 ** ((midi - 69) / 12);
+}
+
+export function playPianoNote(row: number, time: number, duration = 0.3) {
+	const ac = getAudioCtx();
+	const freq = rowToFreq(row);
+
+	const osc = ac.createOscillator();
+	const gain = ac.createGain();
+	osc.type = "triangle";
+	osc.frequency.value = freq;
+	osc.connect(gain);
+	gain.connect(ac.destination);
+	gain.gain.setValueAtTime(0.4, time);
+	gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+	osc.start(time);
+	osc.stop(time + duration);
+}
+
 export const DRUM_PLAYERS: Record<string, (time: number) => void> = {
 	Kick: playKick,
 	Snare: playSnare,

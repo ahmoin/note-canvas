@@ -5,12 +5,10 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
-import { DRUM_PLAYERS, getAudioCtx } from "@/lib/drums";
-import { CHANNELS, STEPS, type TrackItem, useDAWStore } from "@/lib/store";
+import { getAudioCtx } from "@/lib/drums";
+import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-const LOOKAHEAD = 0.1;
-const INTERVAL = 25;
 const STEP_PX = 25;
 
 function StepButton({
@@ -60,18 +58,13 @@ export function ChannelRack() {
 	const {
 		isPlaying,
 		bpm,
-		setCurrentTick,
+		currentTick,
 		patterns,
 		activeTrack,
 		tracks,
 		toggleStep,
-		setPlayStartAudioTime,
-		mutedTracks,
+		playStartAudioTime,
 	} = useDAWStore();
-	const mutedTracksRef = React.useRef(mutedTracks);
-	mutedTracksRef.current = mutedTracks;
-	const patternsRef = React.useRef(patterns);
-	patternsRef.current = patterns;
 
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
@@ -81,70 +74,26 @@ export function ChannelRack() {
 	const [caretStep, setCaretStep] = React.useState(0);
 
 	const bpmRef = React.useRef(bpm);
-	const startRef = React.useRef<{
-		audioTime: number;
-		nextStepTime: number;
-		nextStep: number;
-	} | null>(null);
-	const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+	bpmRef.current = bpm;
 	const rafRef = React.useRef<number | null>(null);
 
-	bpmRef.current = bpm;
-
 	React.useEffect(() => {
-		if (!isPlaying) {
-			if (intervalRef.current) clearInterval(intervalRef.current);
+		if (!isPlaying || playStartAudioTime == null) {
 			if (rafRef.current) cancelAnimationFrame(rafRef.current);
-			startRef.current = null;
-			setCaretStep(0);
-			setCurrentTick(0);
-			setPlayStartAudioTime(null);
 			return;
 		}
-
 		const ac = getAudioCtx();
-		const offset = 0.05;
-		const audioTime = ac.currentTime + offset;
-		startRef.current = { audioTime, nextStepTime: audioTime, nextStep: 0 };
-		setPlayStartAudioTime(audioTime);
-
-		intervalRef.current = setInterval(() => {
-			const s = startRef.current;
-			if (!s) return;
+		const draw = () => {
 			const stepDur = 60 / bpmRef.current / 4;
-			while (s.nextStepTime < ac.currentTime + LOOKAHEAD) {
-				const step = s.nextStep;
-				const time = s.nextStepTime;
-				patternsRef.current.forEach((pat, ti) => {
-					if (!mutedTracksRef.current[ti]) {
-						for (const ch of CHANNELS) {
-							if (pat[ch]?.[step]) DRUM_PLAYERS[ch]?.(time);
-						}
-					}
-				});
-				s.nextStep = (step + 1) % STEPS;
-				s.nextStepTime += stepDur;
-			}
-		}, INTERVAL);
-
-		const drawCaret = () => {
-			const s = startRef.current;
-			if (s) {
-				const stepDur = 60 / bpmRef.current / 4;
-				const elapsed = Math.max(0, ac.currentTime - s.audioTime);
-				const visualStep = Math.floor(elapsed / stepDur) % STEPS;
-				setCaretStep(visualStep);
-				setCurrentTick(visualStep);
-			}
-			rafRef.current = requestAnimationFrame(drawCaret);
+			const elapsed = Math.max(0, ac.currentTime - playStartAudioTime);
+			setCaretStep(Math.floor(elapsed / stepDur) % STEPS);
+			rafRef.current = requestAnimationFrame(draw);
 		};
-		rafRef.current = requestAnimationFrame(drawCaret);
-
+		rafRef.current = requestAnimationFrame(draw);
 		return () => {
-			if (intervalRef.current) clearInterval(intervalRef.current);
 			if (rafRef.current) cancelAnimationFrame(rafRef.current);
 		};
-	}, [isPlaying, setCurrentTick]);
+	}, [isPlaying, playStartAudioTime]);
 
 	const toggle = (channel: string, step: number) => toggleStep(channel, step);
 

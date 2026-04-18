@@ -14,9 +14,19 @@ export const STEPS = 32;
 
 export type Pattern = Record<string, boolean[]>;
 
-export type TrackItem = { name: string; type: string };
+export type TrackSubtype =
+	| "wave"
+	| "drum"
+	| "audio"
+	| "slicer"
+	| "sampler"
+	| "sound"
+	| "effect";
+export type TrackItem = { name: string; type: string; subtype: TrackSubtype };
 
-const DEFAULT_TRACKS: TrackItem[] = [{ name: "Drum Track", type: "sound" }];
+const DEFAULT_TRACKS: TrackItem[] = [
+	{ name: "Drum Track", type: "sound", subtype: "drum" },
+];
 
 const emptyPattern = (): Pattern =>
 	Object.fromEntries(CHANNELS.map((ch) => [ch, Array(STEPS).fill(false)]));
@@ -45,7 +55,9 @@ interface DAWState {
 	setTrackPan: (track: number, pan: number) => void;
 	setSoloTrack: (track: number | null) => void;
 	toggleMuteTrack: (track: number) => void;
-	addTrack: (name: string, type: string) => void;
+	addTrack: (name: string, type: string, subtype?: TrackSubtype) => void;
+	pianoNotes: Record<number, Record<string, boolean>>;
+	togglePianoNote: (trackIndex: number, row: number, sub: number) => void;
 }
 
 export const useDAWStore = create<DAWState>((set) => ({
@@ -61,6 +73,7 @@ export const useDAWStore = create<DAWState>((set) => ({
 	trackPans: Array(DEFAULT_TRACKS.length).fill(0),
 	soloTrack: null,
 	mutedTracks: Array(DEFAULT_TRACKS.length).fill(false),
+	pianoNotes: {},
 	setActiveView: (view) => set({ activeView: view }),
 	togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
 	setBpm: (bpm) => set({ bpm }),
@@ -98,9 +111,17 @@ export const useDAWStore = create<DAWState>((set) => ({
 			next[track] = !next[track];
 			return { mutedTracks: next };
 		}),
-	addTrack: (name, type) =>
+	togglePianoNote: (trackIndex, row, sub) =>
+		set((s) => {
+			const key = `${row}-${sub}`;
+			const track = { ...s.pianoNotes[trackIndex] };
+			if (track[key]) delete track[key];
+			else track[key] = true;
+			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: track } };
+		}),
+	addTrack: (name, type, subtype = "sound") =>
 		set((s) => ({
-			tracks: [...s.tracks, { name, type }],
+			tracks: [...s.tracks, { name, type, subtype }],
 			patterns: [...s.patterns, emptyPattern()],
 			trackVolumes: [...s.trackVolumes, 50],
 			trackPans: [...s.trackPans, 0],
