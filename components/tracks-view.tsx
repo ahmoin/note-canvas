@@ -7,6 +7,7 @@ import {
 	SidebarSimpleIcon,
 } from "@phosphor-icons/react";
 import * as React from "react";
+import { ClipMenu } from "@/components/clip-menu";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS } from "@/lib/catppuccin";
@@ -199,7 +200,22 @@ export function TracksView({
 		setActiveTrack,
 	} = useDAWStore();
 	const flavor = useFlavor();
-	const red = FLAVOR_VARS[flavor].red;
+	const vars = FLAVOR_VARS[flavor];
+	const TRACK_PALETTE = [
+		"pink",
+		"teal",
+		"blue",
+		"green",
+		"mauve",
+		"peach",
+		"sky",
+		"lavender",
+		"red",
+		"flamingo",
+	] as const;
+	const trackColors = tracks.map(
+		(_, ti) => vars[TRACK_PALETTE[ti % TRACK_PALETTE.length]],
+	);
 	const [selectedClips, setSelectedClips] = React.useState<Set<number>>(
 		new Set([0]),
 	);
@@ -276,72 +292,69 @@ export function TracksView({
 			<div className="flex flex-1 overflow-hidden">
 				<div className="flex w-48 shrink-0 flex-col border-r">
 					<div className="h-6 shrink-0 border-b" />
-					{tracks.map((track, ti) => (
-						<div
-							key={ti}
-							className="flex h-16 shrink-0 flex-col justify-between border-b border-l-2 bg-[#1a0f0f] px-2 py-1.5"
-							style={{ borderLeftColor: red }}
-						>
-							<div className="flex items-center gap-1.5">
-								<PlayIcon
-									className="size-3"
-									style={{ fill: red, color: red }}
-								/>
-								<span
-									className="text-xs font-medium"
-									style={{ color: `color-mix(in srgb, ${red} 60%, white)` }}
-								>
-									{track.name}
-								</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<Knob
-									label="PAN"
-									value={trackPans[ti]}
-									min={-50}
-									max={50}
-									onChange={(v) => setTrackPan(ti, v)}
-									red={red}
-								/>
-								<Knob
-									label="VOL"
-									value={trackVolumes[ti]}
-									onChange={(v) => setTrackVolume(ti, v)}
-									red={red}
-								/>
-								<div className="size-2 rounded-full bg-white/20" />
-								<button
-									type="button"
-									onClick={() => setSoloTrack(ti)}
-									className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
-									title={soloTrack === ti ? "Unsolo" : "Solo"}
-								>
-									<HeadphonesIcon
-										className="size-3.5"
-										style={{
-											color:
-												soloTrack === ti
-													? red
-													: soloTrack !== null
-														? `color-mix(in srgb, ${red} 25%, transparent)`
-														: `color-mix(in srgb, ${red} 70%, transparent)`,
-										}}
+					{tracks.map((track, ti) => {
+						const color = trackColors[ti];
+						return (
+							<div
+								key={ti}
+								className="flex h-16 shrink-0 flex-col justify-between border-b border-l-[3px] bg-black/20 px-2 py-1.5"
+								style={{ borderLeftColor: color }}
+							>
+								<div className="flex items-center gap-1.5">
+									<PlayIcon className="size-3" style={{ fill: color, color }} />
+									<span className="text-xs font-medium text-white/80">
+										{track.name}
+									</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<Knob
+										label="PAN"
+										value={trackPans[ti]}
+										min={-50}
+										max={50}
+										onChange={(v) => setTrackPan(ti, v)}
+										red={color}
 									/>
-								</button>
-								<button
-									type="button"
-									onClick={() => toggleMuteTrack(ti)}
-									title={mutedTracks[ti] ? "Enable audio" : "Disable audio"}
-									className={cn(
-										"size-2 rounded-full transition-colors",
-										mutedTracks[ti]
-											? "bg-white/20"
-											: "bg-green-400 shadow-[0_0_4px_#4ade80]",
-									)}
-								/>
+									<Knob
+										label="VOL"
+										value={trackVolumes[ti]}
+										onChange={(v) => setTrackVolume(ti, v)}
+										red={color}
+									/>
+									<div className="size-2 rounded-full bg-white/20" />
+									<button
+										type="button"
+										onClick={() => setSoloTrack(ti)}
+										className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
+										title={soloTrack === ti ? "Unsolo" : "Solo"}
+									>
+										<HeadphonesIcon
+											className="size-3.5"
+											style={{
+												color:
+													soloTrack === ti
+														? color
+														: soloTrack !== null
+															? `color-mix(in srgb, ${color} 25%, transparent)`
+															: `color-mix(in srgb, ${color} 70%, transparent)`,
+											}}
+										/>
+									</button>
+									<button
+										type="button"
+										onClick={() => toggleMuteTrack(ti)}
+										title={mutedTracks[ti] ? "Enable audio" : "Disable audio"}
+										className={cn(
+											"size-2 rounded-full transition-colors",
+											mutedTracks[ti]
+												? "bg-white/20"
+												: "bg-green-400 shadow-[0_0_4px_#4ade80]",
+										)}
+									/>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 
 				<div
@@ -386,26 +399,47 @@ export function TracksView({
 						))}
 					</div>
 
-					{tracks.map((_, ti) => (
-						<div
-							key={ti}
-							className="flex h-16 items-center border-b"
-							style={{ width: TOTAL_BARS * BAR_PX }}
-						>
+					{tracks.map((track, ti) => {
+						const color = trackColors[ti];
+						return (
 							<div
-								className="mx-1 h-[52px] cursor-pointer overflow-hidden rounded-[3px] bg-[#2d1010] ring-1 transition-shadow"
-								style={{
-									width: BAR_PX * 8 - 8,
-									boxShadow: selectedClips.has(ti)
-										? `0 0 0 2px ${red}`
-										: `0 0 0 1px color-mix(in srgb, ${red} 40%, transparent)`,
-								}}
-								onClick={(e) => handleClipClick(ti, e)}
+								key={ti}
+								className="flex h-16 items-center border-b"
+								style={{ width: TOTAL_BARS * BAR_PX }}
 							>
-								<ClipPreview pattern={patterns[ti]} red={red} />
+								<div
+									className="relative mx-1 h-[52px] cursor-pointer overflow-hidden rounded-sm transition-shadow"
+									style={{
+										width: BAR_PX * 8 - 8,
+										backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`,
+										boxShadow: selectedClips.has(ti)
+											? `inset 0 0 0 2px ${color}`
+											: `inset 0 0 0 1px color-mix(in srgb, ${color} 50%, transparent)`,
+									}}
+									onClick={(e) => handleClipClick(ti, e)}
+								>
+									<div className="absolute inset-0">
+										<ClipPreview pattern={patterns[ti]} red={color} />
+									</div>
+									<span
+										className="absolute left-1.5 top-1 text-[9px] font-medium"
+										style={{ color: `color-mix(in srgb, ${color} 90%, white)` }}
+									>
+										{track.name}
+									</span>
+									<ClipMenu>
+										<button
+											type="button"
+											className="absolute right-1.5 top-1 text-[9px] text-white/30 hover:text-white/70 transition-colors"
+											onClick={(e) => e.stopPropagation()}
+										>
+											•••
+										</button>
+									</ClipMenu>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 
 					<div
 						ref={playheadRef}
