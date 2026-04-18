@@ -183,7 +183,7 @@ const GridRow = React.memo(function GridRow({
 			}}
 		>
 			{activeKeys.map((k) => {
-				const ci = parseInt(k.split("-")[1]);
+				const ci = parseInt(k.split("-")[1], 10);
 				return (
 					<div
 						key={k}

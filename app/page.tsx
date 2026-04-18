@@ -39,27 +39,25 @@ export default function Page() {
 	}, [togglePlay]);
 
 	return (
-		<>
-			<div className="flex h-screen flex-col overflow-hidden bg-background">
-				<TransportBar />
-				<ViewTabs />
-				<div className="flex min-h-0 flex-1 overflow-hidden">
-					{showPanel && <PatternList tab={panelTab} setTab={setPanelTab} />}
-					<div className="flex flex-1 flex-col overflow-hidden">
-						{activeView === "tracks" && (
-							<TracksView
-								showPanel={showPanel}
-								onTogglePanel={() => setShowPanel((p) => !p)}
-							/>
-						)}
-						{activeView === "piano-roll" && <PianoRoll />}
-						{activeView === "mixer" && <Mixer />}
-						{activeView === "playlist" && <Playlist />}
-					</div>
+		<div className="flex h-screen flex-col overflow-hidden bg-background">
+			<TransportBar />
+			<ViewTabs />
+			<div className="flex min-h-0 flex-1 overflow-hidden">
+				{showPanel && <PatternList tab={panelTab} setTab={setPanelTab} />}
+				<div className="flex flex-1 flex-col overflow-hidden">
+					{activeView === "tracks" && (
+						<TracksView
+							showPanel={showPanel}
+							onTogglePanel={() => setShowPanel((p) => !p)}
+						/>
+					)}
+					{activeView === "piano-roll" && <PianoRoll />}
+					{activeView === "mixer" && <Mixer />}
+					{activeView === "playlist" && <Playlist />}
 				</div>
-				{activeSubtype === "wave" ? <PianoRoll /> : <ChannelRack />}
-				<ThemeSelector />
 			</div>
-		</>
+			{activeSubtype === "wave" ? <PianoRoll /> : <ChannelRack />}
+			<ThemeSelector />
+		</div>
 	);
 }

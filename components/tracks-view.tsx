@@ -45,15 +45,15 @@ function ClipPreview({
 				</div>
 			);
 		}
-		const rows = noteKeys.map((k) => parseInt(k.split("-")[0]));
+		const rows = noteKeys.map((k) => parseInt(k.split("-")[0], 10));
 		const minRow = Math.min(...rows);
 		const maxRow = Math.max(...rows);
 		const rowSpan = Math.max(maxRow - minRow + 1, 1);
 		return (
 			<div className="relative h-full w-full overflow-hidden px-1 py-1">
 				{noteKeys.map((k) => {
-					const r = parseInt(k.split("-")[0]);
-					const s = parseInt(k.split("-")[1]);
+					const r = parseInt(k.split("-")[0], 10);
+					const s = parseInt(k.split("-")[1], 10);
 					const top = ((r - minRow) / rowSpan) * 100;
 					const left = (s / TOTAL_SUBS) * 100;
 					return (
@@ -177,6 +177,7 @@ function Knob({
 			title={`${label}: ${displayValue}`}
 		>
 			<svg width={KNOB_SIZE} height={KNOB_SIZE} className="absolute inset-0">
+				<title>{label}</title>
 				<path
 					d={bgPath}
 					fill="none"

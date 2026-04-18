@@ -29,7 +29,13 @@ function StepButton({
 			? "bg-white/[0.12] hover:bg-white/[0.17]"
 			: "bg-white/[0.07] hover:bg-white/10";
 	return (
-		<div className="cursor-pointer px-1" onClick={onClick}>
+		<div
+			role="button"
+			tabIndex={0}
+			className="cursor-pointer px-1"
+			onClick={onClick}
+			onKeyDown={(e) => e.key === "Enter" && onClick()}
+		>
 			<div
 				className={cn(
 					"relative h-[27px] w-[17px] overflow-hidden rounded-[3px] px-[2px] py-[5px] transition-colors",

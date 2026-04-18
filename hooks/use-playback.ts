@@ -69,9 +69,9 @@ export function usePlayback() {
 						const notes = pianoRef.current[ti];
 						if (notes) {
 							Object.keys(notes).forEach((k) => {
-								const ci = parseInt(k.split("-")[1]);
+								const ci = parseInt(k.split("-")[1], 10);
 								if (ci === step % PIANO_STEPS) {
-									const ri = parseInt(k.split("-")[0]);
+									const ri = parseInt(k.split("-")[0], 10);
 									playPianoNote(ri, time);
 								}
 							});
