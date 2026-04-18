@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, SkipBack, Square } from "lucide-react";
+import { PlayIcon, SkipBackIcon, SquareIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
 
@@ -10,7 +10,7 @@ export function TransportBar() {
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3">
 			<Button variant="ghost" size="icon" className="size-8">
-				<SkipBack className="size-4" />
+				<SkipBackIcon className="size-4" />
 			</Button>
 			<Button
 				variant="ghost"
@@ -19,9 +19,9 @@ export function TransportBar() {
 				onClick={togglePlay}
 			>
 				{isPlaying ? (
-					<Square className="size-4" />
+					<SquareIcon className="size-4" />
 				) : (
-					<Play className="size-4" />
+					<PlayIcon className="size-4" />
 				)}
 			</Button>
 			<div className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Headphones, Play, Plus } from "lucide-react";
+import { HeadphonesIcon, PlayIcon, PlusIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
@@ -248,7 +248,7 @@ export function TracksView() {
 		<div className="flex flex-1 flex-col overflow-hidden">
 			<div className="flex h-8 shrink-0 items-center justify-end border-b px-2">
 				<Button variant="ghost" size="icon" className="size-6">
-					<Plus className="size-3" />
+					<PlusIcon className="size-3" />
 				</Button>
 			</div>
 
@@ -262,7 +262,7 @@ export function TracksView() {
 							style={{ borderLeftColor: red }}
 						>
 							<div className="flex items-center gap-1.5">
-								<Play className="size-3" style={{ fill: red, color: red }} />
+								<PlayIcon className="size-3" style={{ fill: red, color: red }} />
 								<span
 									className="text-xs font-medium"
 									style={{ color: `color-mix(in srgb, ${red} 60%, white)` }}
@@ -292,7 +292,7 @@ export function TracksView() {
 									className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
 									title={soloTrack === ti ? "Unsolo" : "Solo"}
 								>
-									<Headphones
+									<HeadphonesIcon
 										className="size-3.5"
 										style={{
 											color:

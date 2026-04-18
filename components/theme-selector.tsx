@@ -1,6 +1,6 @@
 "use client";
 
-import { PaletteIcon } from "lucide-react";
+import { PaletteIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import {

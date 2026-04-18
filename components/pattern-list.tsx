@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { PlusIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
@@ -34,7 +34,7 @@ export function PatternList() {
 			<div className="flex h-8 shrink-0 items-center justify-between border-b px-2">
 				<span className="text-xs font-medium capitalize">{tab}</span>
 				<Button variant="ghost" size="icon" className="size-6">
-					<Plus className="size-3" />
+					<PlusIcon className="size-3" />
 				</Button>
 			</div>
 
