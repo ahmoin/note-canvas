@@ -193,4 +193,5 @@ export function applyFlavor(flavor: Flavor, accentKey: SwatchKey): void {
 
 	localStorage.setItem("catppuccin-flavor", flavor);
 	localStorage.setItem("catppuccin-accent", accentKey);
+	window.dispatchEvent(new Event("catppuccin-flavor-change"));
 }

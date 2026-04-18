@@ -3,6 +3,8 @@
 import { Headphones, Play, Plus } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useFlavor } from "@/hooks/use-flavor";
+import { FLAVOR_VARS } from "@/lib/catppuccin";
 import { getAudioCtx } from "@/lib/drums";
 import { CHANNELS, type Pattern, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -11,7 +13,7 @@ const BEAT_PX = 32;
 const BAR_PX = BEAT_PX * 4;
 const TOTAL_BARS = 16;
 
-function ClipPreview({ pattern }: { pattern: Pattern }) {
+function ClipPreview({ pattern, red }: { pattern: Pattern; red: string }) {
 	return (
 		<div className="flex h-full w-full flex-col gap-px px-1.5 py-1.5">
 			{CHANNELS.map((ch) => (
@@ -19,10 +21,12 @@ function ClipPreview({ pattern }: { pattern: Pattern }) {
 					{pattern[ch].map((active, si) => (
 						<div
 							key={si}
-							className={cn(
-								"flex-1 rounded-[1px]",
-								active ? "bg-red-400/80" : "bg-transparent",
-							)}
+							className="flex-1 rounded-[1px]"
+							style={{
+								backgroundColor: active
+									? `color-mix(in srgb, ${red} 80%, transparent)`
+									: "transparent",
+							}}
 						/>
 					))}
 				</div>
@@ -49,12 +53,14 @@ function Knob({
 	min = 0,
 	max = 100,
 	onChange,
+	red,
 }: {
 	label: string;
 	value: number;
 	min?: number;
 	max?: number;
 	onChange: (v: number) => void;
+	red: string;
 }) {
 	const dragRef = React.useRef<{ y: number; value: number } | null>(null);
 
@@ -123,7 +129,7 @@ function Knob({
 					<path
 						d={valPath}
 						fill="none"
-						stroke="rgba(239,68,68,0.65)"
+						style={{ stroke: `color-mix(in srgb, ${red} 65%, transparent)` }}
 						strokeWidth="2"
 						strokeLinecap="round"
 					/>
@@ -134,9 +140,15 @@ function Knob({
 				className="absolute inset-[4px] flex items-start justify-center pt-[3px]"
 				style={{ transform: `rotate(${angle}deg)` }}
 			>
-				<div className="h-[7px] w-[2px] rounded-full bg-red-200/90" />
+				<div
+					className="h-[7px] w-[2px] rounded-full"
+					style={{ backgroundColor: `color-mix(in srgb, ${red} 90%, white)` }}
+				/>
 			</div>
-			<span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] text-red-400/60 opacity-0 group-hover:opacity-100">
+			<span
+				className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] opacity-0 group-hover:opacity-100"
+				style={{ color: `color-mix(in srgb, ${red} 60%, transparent)` }}
+			>
 				{label}
 			</span>
 		</div>
@@ -144,9 +156,9 @@ function Knob({
 }
 
 const TRACKS = [
-	{ name: "Drum Track", border: "border-l-red-600" },
-	{ name: "Bass", border: "border-l-red-500" },
-	{ name: "Lead Synth", border: "border-l-rose-500" },
+	{ name: "Drum Track" },
+	{ name: "Bass" },
+	{ name: "Lead Synth" },
 ];
 
 function rulerBeats() {
@@ -173,6 +185,8 @@ export function TracksView() {
 		setTrackVolume,
 		setTrackPan,
 	} = useDAWStore();
+	const flavor = useFlavor();
+	const red = FLAVOR_VARS[flavor].red;
 	const playheadRef = React.useRef<HTMLDivElement>(null);
 	const rafRef = React.useRef<number | null>(null);
 	const bpmRef = React.useRef(bpm);
@@ -218,14 +232,15 @@ export function TracksView() {
 					{TRACKS.map((track, ti) => (
 						<div
 							key={ti}
-							className={cn(
-								"flex h-16 shrink-0 flex-col justify-between border-b border-l-2 bg-[#1a0f0f] px-2 py-1.5",
-								track.border,
-							)}
+							className="flex h-16 shrink-0 flex-col justify-between border-b border-l-2 bg-[#1a0f0f] px-2 py-1.5"
+							style={{ borderLeftColor: red }}
 						>
 							<div className="flex items-center gap-1.5">
-								<Play className="size-3 fill-red-300 text-red-300" />
-								<span className="text-xs font-medium text-red-100">
+								<Play className="size-3" style={{ fill: red, color: red }} />
+								<span
+									className="text-xs font-medium"
+									style={{ color: `color-mix(in srgb, ${red} 60%, white)` }}
+								>
 									{track.name}
 								</span>
 							</div>
@@ -236,14 +251,21 @@ export function TracksView() {
 									min={-50}
 									max={50}
 									onChange={(v) => setTrackPan(ti, v)}
+									red={red}
 								/>
 								<Knob
 									label="VOL"
 									value={trackVolumes[ti]}
 									onChange={(v) => setTrackVolume(ti, v)}
+									red={red}
 								/>
 								<div className="size-2 rounded-full bg-white/20" />
-								<Headphones className="size-3.5 text-red-400/70" />
+								<Headphones
+									className="size-3.5"
+									style={{
+										color: `color-mix(in srgb, ${red} 70%, transparent)`,
+									}}
+								/>
 								<div className="size-2 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80]" />
 							</div>
 						</div>
@@ -285,10 +307,13 @@ export function TracksView() {
 							style={{ width: TOTAL_BARS * BAR_PX }}
 						>
 							<div
-								className="mx-1 h-[52px] overflow-hidden rounded-[3px] bg-[#2d1010] ring-1 ring-red-600/40"
-								style={{ width: BAR_PX * 8 - 8 }}
+								className="mx-1 h-[52px] overflow-hidden rounded-[3px] bg-[#2d1010] ring-1"
+								style={{
+									width: BAR_PX * 8 - 8,
+									outlineColor: `color-mix(in srgb, ${red} 40%, transparent)`,
+								}}
 							>
-								<ClipPreview pattern={pattern} />
+								<ClipPreview pattern={pattern} red={red} />
 							</div>
 						</div>
 					))}
