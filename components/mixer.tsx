@@ -22,7 +22,7 @@ export function Mixer() {
 						min={0}
 						max={100}
 						defaultValue={i === 0 ? 75 : 60 - i * 5}
-						orient="vertical"
+						{...{ orient: "vertical" }}
 						className="h-40 w-2 cursor-pointer accent-primary"
 					/>
 					<span className="text-[10px] text-muted-foreground">
