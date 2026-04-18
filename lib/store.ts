@@ -14,25 +14,38 @@ export const STEPS = 32;
 
 export type Pattern = Record<string, boolean[]>;
 
-const TRACK_COUNT = 3;
+export type TrackItem = { name: string; type: string };
+
+const DEFAULT_TRACKS: TrackItem[] = [{ name: "Drum Track", type: "sound" }];
+
+const emptyPattern = (): Pattern =>
+	Object.fromEntries(CHANNELS.map((ch) => [ch, Array(STEPS).fill(false)]));
 
 interface DAWState {
 	activeView: View;
 	isPlaying: boolean;
 	bpm: number;
 	currentTick: number;
-	pattern: Pattern;
+	patterns: Pattern[];
+	activeTrack: number;
 	playStartAudioTime: number | null;
+	tracks: TrackItem[];
 	trackVolumes: number[];
 	trackPans: number[];
+	soloTrack: number | null;
+	mutedTracks: boolean[];
 	setActiveView: (view: View) => void;
 	togglePlay: () => void;
 	setBpm: (bpm: number) => void;
 	setCurrentTick: (tick: number) => void;
 	toggleStep: (channel: string, step: number) => void;
 	setPlayStartAudioTime: (t: number | null) => void;
+	setActiveTrack: (ti: number) => void;
 	setTrackVolume: (track: number, vol: number) => void;
 	setTrackPan: (track: number, pan: number) => void;
+	setSoloTrack: (track: number | null) => void;
+	toggleMuteTrack: (track: number) => void;
+	addTrack: (name: string, type: string) => void;
 }
 
 export const useDAWStore = create<DAWState>((set) => ({
@@ -40,22 +53,30 @@ export const useDAWStore = create<DAWState>((set) => ({
 	isPlaying: false,
 	bpm: 128,
 	currentTick: 0,
-	pattern: Object.fromEntries(
-		CHANNELS.map((ch) => [ch, Array(STEPS).fill(false)]),
-	),
+	patterns: DEFAULT_TRACKS.map(() => emptyPattern()),
+	activeTrack: 0,
 	playStartAudioTime: null,
-	trackVolumes: Array(TRACK_COUNT).fill(50),
-	trackPans: Array(TRACK_COUNT).fill(0),
+	tracks: DEFAULT_TRACKS,
+	trackVolumes: Array(DEFAULT_TRACKS.length).fill(50),
+	trackPans: Array(DEFAULT_TRACKS.length).fill(0),
+	soloTrack: null,
+	mutedTracks: Array(DEFAULT_TRACKS.length).fill(false),
 	setActiveView: (view) => set({ activeView: view }),
 	togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
 	setBpm: (bpm) => set({ bpm }),
 	setCurrentTick: (tick) => set({ currentTick: tick }),
 	setPlayStartAudioTime: (t) => set({ playStartAudioTime: t }),
+	setActiveTrack: (ti) => set({ activeTrack: ti }),
 	toggleStep: (channel, step) =>
 		set((s) => {
-			const next = [...s.pattern[channel]];
-			next[step] = !next[step];
-			return { pattern: { ...s.pattern, [channel]: next } };
+			const next = s.patterns.map((p) => ({ ...p }));
+			next[s.activeTrack] = {
+				...next[s.activeTrack],
+				[channel]: next[s.activeTrack][channel].map((v, i) =>
+					i === step ? !v : v,
+				),
+			};
+			return { patterns: next };
 		}),
 	setTrackVolume: (track, vol) =>
 		set((s) => {
@@ -69,4 +90,20 @@ export const useDAWStore = create<DAWState>((set) => ({
 			next[track] = pan;
 			return { trackPans: next };
 		}),
+	setSoloTrack: (track) =>
+		set((s) => ({ soloTrack: s.soloTrack === track ? null : track })),
+	toggleMuteTrack: (track) =>
+		set((s) => {
+			const next = [...s.mutedTracks];
+			next[track] = !next[track];
+			return { mutedTracks: next };
+		}),
+	addTrack: (name, type) =>
+		set((s) => ({
+			tracks: [...s.tracks, { name, type }],
+			patterns: [...s.patterns, emptyPattern()],
+			trackVolumes: [...s.trackVolumes, 50],
+			trackPans: [...s.trackPans, 0],
+			mutedTracks: [...s.mutedTracks, false],
+		})),
 }));

@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { DRUM_PLAYERS, getAudioCtx } from "@/lib/drums";
-import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
+import { CHANNELS, STEPS, type TrackItem, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const LOOKAHEAD = 0.1;
@@ -50,13 +50,21 @@ export function ChannelRack() {
 		isPlaying,
 		bpm,
 		setCurrentTick,
-		pattern,
+		patterns,
+		activeTrack,
+		tracks,
 		toggleStep,
 		setPlayStartAudioTime,
+		mutedTracks,
 	} = useDAWStore();
+	const mutedTracksRef = React.useRef(mutedTracks);
+	mutedTracksRef.current = mutedTracks;
+	const patternsRef = React.useRef(patterns);
+	patternsRef.current = patterns;
+
+	const pattern = patterns[activeTrack] ?? patterns[0];
 	const [caretStep, setCaretStep] = React.useState(0);
 
-	const patternRef = React.useRef(pattern);
 	const bpmRef = React.useRef(bpm);
 	const startRef = React.useRef<{
 		audioTime: number;
@@ -65,8 +73,6 @@ export function ChannelRack() {
 	} | null>(null);
 	const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 	const rafRef = React.useRef<number | null>(null);
-
-	patternRef.current = pattern;
 
 	bpmRef.current = bpm;
 
@@ -94,9 +100,13 @@ export function ChannelRack() {
 			while (s.nextStepTime < ac.currentTime + LOOKAHEAD) {
 				const step = s.nextStep;
 				const time = s.nextStepTime;
-				for (const ch of CHANNELS) {
-					if (patternRef.current[ch][step]) DRUM_PLAYERS[ch]?.(time);
-				}
+				patternsRef.current.forEach((pat, ti) => {
+					if (!mutedTracksRef.current[ti]) {
+						for (const ch of CHANNELS) {
+							if (pat[ch]?.[step]) DRUM_PLAYERS[ch]?.(time);
+						}
+					}
+				});
 				s.nextStep = (step + 1) % STEPS;
 				s.nextStepTime += stepDur;
 			}
@@ -128,7 +138,9 @@ export function ChannelRack() {
 	return (
 		<div className="flex h-[286px] shrink-0 flex-col border-t bg-background">
 			<div className="flex h-8 shrink-0 items-center justify-between border-b px-3">
-				<span className="text-xs font-medium tracking-wide">Channel Rack</span>
+				<span className="text-xs font-medium tracking-wide">
+					Channel Rack — {tracks[activeTrack]?.name ?? "No Track"}
+				</span>
 				<Button variant="ghost" size="icon" className="size-6">
 					<Plus className="size-3" />
 				</Button>

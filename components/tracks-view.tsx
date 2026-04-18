@@ -155,12 +155,6 @@ function Knob({
 	);
 }
 
-const TRACKS = [
-	{ name: "Drum Track" },
-	{ name: "Bass" },
-	{ name: "Lead Synth" },
-];
-
 function rulerBeats() {
 	const beats: { label: string; isMajor: boolean }[] = [];
 	for (let bar = 0; bar < TOTAL_BARS; bar++) {
@@ -176,17 +170,49 @@ const RULER_BEATS = rulerBeats();
 
 export function TracksView() {
 	const {
-		pattern,
+		tracks,
+		patterns,
+		activeTrack,
 		isPlaying,
 		bpm,
 		playStartAudioTime,
 		trackVolumes,
 		trackPans,
+		soloTrack,
+		mutedTracks,
 		setTrackVolume,
 		setTrackPan,
+		setSoloTrack,
+		toggleMuteTrack,
+		addTrack,
+		setActiveTrack,
 	} = useDAWStore();
 	const flavor = useFlavor();
 	const red = FLAVOR_VARS[flavor].red;
+	const [selectedClips, setSelectedClips] = React.useState<Set<number>>(
+		new Set([0]),
+	);
+	const [isDragOver, setIsDragOver] = React.useState(false);
+
+	const handleDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		setIsDragOver(false);
+		try {
+			const { name, type } = JSON.parse(e.dataTransfer.getData("text/plain"));
+			addTrack(name, type);
+		} catch {}
+	};
+
+	const handleClipClick = (ti: number, e: React.MouseEvent) => {
+		setActiveTrack(ti);
+		setSelectedClips((prev) => {
+			const next = new Set(e.ctrlKey || e.metaKey ? prev : []);
+			if (next.has(ti)) next.delete(ti);
+			else next.add(ti);
+			return next;
+		});
+	};
+
 	const playheadRef = React.useRef<HTMLDivElement>(null);
 	const rafRef = React.useRef<number | null>(null);
 	const bpmRef = React.useRef(bpm);
@@ -229,7 +255,7 @@ export function TracksView() {
 			<div className="flex flex-1 overflow-hidden">
 				<div className="flex w-48 shrink-0 flex-col border-r">
 					<div className="h-6 shrink-0 border-b" />
-					{TRACKS.map((track, ti) => (
+					{tracks.map((track, ti) => (
 						<div
 							key={ti}
 							className="flex h-16 shrink-0 flex-col justify-between border-b border-l-2 bg-[#1a0f0f] px-2 py-1.5"
@@ -260,19 +286,55 @@ export function TracksView() {
 									red={red}
 								/>
 								<div className="size-2 rounded-full bg-white/20" />
-								<Headphones
-									className="size-3.5"
-									style={{
-										color: `color-mix(in srgb, ${red} 70%, transparent)`,
-									}}
+								<button
+									type="button"
+									onClick={() => setSoloTrack(ti)}
+									className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
+									title={soloTrack === ti ? "Unsolo" : "Solo"}
+								>
+									<Headphones
+										className="size-3.5"
+										style={{
+											color:
+												soloTrack === ti
+													? red
+													: soloTrack !== null
+														? `color-mix(in srgb, ${red} 25%, transparent)`
+														: `color-mix(in srgb, ${red} 70%, transparent)`,
+										}}
+									/>
+								</button>
+								<button
+									type="button"
+									onClick={() => toggleMuteTrack(ti)}
+									title={mutedTracks[ti] ? "Enable audio" : "Disable audio"}
+									className={cn(
+										"size-2 rounded-full transition-colors",
+										mutedTracks[ti]
+											? "bg-white/20"
+											: "bg-green-400 shadow-[0_0_4px_#4ade80]",
+									)}
 								/>
-								<div className="size-2 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80]" />
 							</div>
 						</div>
 					))}
 				</div>
 
-				<div className="relative flex-1 overflow-x-auto overflow-y-hidden">
+				<div
+					className={cn(
+						"relative flex-1 overflow-x-auto overflow-y-hidden transition-colors",
+						isDragOver && "bg-white/5",
+					)}
+					onClick={(e) => {
+						if (e.target === e.currentTarget) setSelectedClips(new Set());
+					}}
+					onDragOver={(e) => {
+						e.preventDefault();
+						setIsDragOver(true);
+					}}
+					onDragLeave={() => setIsDragOver(false)}
+					onDrop={handleDrop}
+				>
 					<div
 						className="flex h-6 shrink-0 items-end border-b"
 						style={{ width: TOTAL_BARS * BAR_PX }}
@@ -300,20 +362,23 @@ export function TracksView() {
 						))}
 					</div>
 
-					{TRACKS.map((_, ti) => (
+					{tracks.map((_, ti) => (
 						<div
 							key={ti}
 							className="flex h-16 items-center border-b"
 							style={{ width: TOTAL_BARS * BAR_PX }}
 						>
 							<div
-								className="mx-1 h-[52px] overflow-hidden rounded-[3px] bg-[#2d1010] ring-1"
+								className="mx-1 h-[52px] cursor-pointer overflow-hidden rounded-[3px] bg-[#2d1010] ring-1 transition-shadow"
 								style={{
 									width: BAR_PX * 8 - 8,
-									outlineColor: `color-mix(in srgb, ${red} 40%, transparent)`,
+									boxShadow: selectedClips.has(ti)
+										? `0 0 0 2px ${red}`
+										: `0 0 0 1px color-mix(in srgb, ${red} 40%, transparent)`,
 								}}
+								onClick={(e) => handleClipClick(ti, e)}
 							>
-								<ClipPreview pattern={pattern} red={red} />
+								<ClipPreview pattern={patterns[ti]} red={red} />
 							</div>
 						</div>
 					))}
