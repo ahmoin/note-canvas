@@ -1,6 +1,11 @@
 "use client";
 
-import { HeadphonesIcon, PlayIcon, PlusIcon } from "@phosphor-icons/react";
+import {
+	HeadphonesIcon,
+	PlayIcon,
+	PlusIcon,
+	SidebarSimpleIcon,
+} from "@phosphor-icons/react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
@@ -168,7 +173,13 @@ function rulerBeats() {
 
 const RULER_BEATS = rulerBeats();
 
-export function TracksView() {
+export function TracksView({
+	showPanel,
+	onTogglePanel,
+}: {
+	showPanel: boolean;
+	onTogglePanel: () => void;
+}) {
 	const {
 		tracks,
 		patterns,
@@ -246,7 +257,17 @@ export function TracksView() {
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
-			<div className="flex h-8 shrink-0 items-center justify-end border-b px-2">
+			<div className="flex h-8 shrink-0 items-center border-b px-2">
+				<Button
+					variant="ghost"
+					size="icon"
+					className="size-6"
+					onClick={onTogglePanel}
+					title={showPanel ? "Hide panel" : "Show panel"}
+				>
+					<SidebarSimpleIcon className="size-3" />
+				</Button>
+				<div className="flex-1" />
 				<Button variant="ghost" size="icon" className="size-6">
 					<PlusIcon className="size-3" />
 				</Button>
