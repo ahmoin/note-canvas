@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 const BEAT_PX = 32;
 const BAR_PX = BEAT_PX * 4;
 const TOTAL_BARS = 16;
+const TOTAL_SUBS = 256;
 
 function ClipPreview({
 	pattern,
@@ -45,10 +46,8 @@ function ClipPreview({
 			);
 		}
 		const rows = noteKeys.map((k) => parseInt(k.split("-")[0]));
-		const subs = noteKeys.map((k) => parseInt(k.split("-")[1]));
-		const minRow = Math.min(...rows),
-			maxRow = Math.max(...rows);
-		const maxSub = Math.max(...subs);
+		const minRow = Math.min(...rows);
+		const maxRow = Math.max(...rows);
 		const rowSpan = Math.max(maxRow - minRow + 1, 1);
 		return (
 			<div className="relative h-full w-full overflow-hidden px-1 py-1">
@@ -56,7 +55,7 @@ function ClipPreview({
 					const r = parseInt(k.split("-")[0]);
 					const s = parseInt(k.split("-")[1]);
 					const top = ((r - minRow) / rowSpan) * 100;
-					const left = (s / Math.max(maxSub + 1, 64)) * 100;
+					const left = (s / TOTAL_SUBS) * 100;
 					return (
 						<div
 							key={k}
