@@ -15,6 +15,7 @@ import { getAudioCtx } from "@/lib/drums";
 import {
 	CHANNELS,
 	type Pattern,
+	STEPS,
 	type TrackSubtype,
 	useDAWStore,
 } from "@/lib/store";
@@ -298,11 +299,12 @@ export function TracksView({
 
 		const ac = getAudioCtx();
 
+		const patternBeats = STEPS / 4;
 		const draw = () => {
 			if (playheadRef.current) {
 				const elapsed = Math.max(0, ac.currentTime - playStartAudioTime);
 				const beats = elapsed * (bpmRef.current / 60);
-				const px = beats * BEAT_PX;
+				const px = (beats % patternBeats) * BEAT_PX;
 				playheadRef.current.style.transform = `translateX(${px}px)`;
 			}
 			rafRef.current = requestAnimationFrame(draw);

@@ -11,18 +11,18 @@ import { cn } from "@/lib/utils";
 
 const STEP_PX = 25;
 
-function StepButton({
+const StepButton = React.memo(function StepButton({
 	active,
-	isCaret,
 	beat,
 	color,
 	onClick,
+	stepIndex,
 }: {
 	active: boolean;
-	isCaret: boolean;
 	beat: number;
 	color: string;
 	onClick: () => void;
+	stepIndex: number;
 }) {
 	const inactiveBg =
 		beat % 2 === 0
@@ -32,6 +32,8 @@ function StepButton({
 		<div
 			role="button"
 			tabIndex={0}
+			data-step={stepIndex}
+			data-active={active ? "1" : "0"}
 			className="cursor-pointer px-1"
 			onClick={onClick}
 			onKeyDown={(e) => e.key === "Enter" && onClick()}
@@ -49,22 +51,16 @@ function StepButton({
 						: undefined
 				}
 			>
-				<div
-					className={cn(
-						"h-[3px] rounded-full",
-						isCaret && active ? "bg-white" : "bg-background",
-					)}
-				/>
+				<div className="step-slit h-[3px] rounded-full bg-background" />
 			</div>
 		</div>
 	);
-}
+});
 
 export function ChannelRack() {
 	const {
 		isPlaying,
 		bpm,
-		currentTick,
 		patterns,
 		activeTrack,
 		tracks,
@@ -77,8 +73,9 @@ export function ChannelRack() {
 	const trackColor = vars[TRACK_PALETTE[activeTrack % TRACK_PALETTE.length]];
 
 	const pattern = patterns[activeTrack] ?? patterns[0];
-	const [caretStep, setCaretStep] = React.useState(0);
-
+	const caretRef = React.useRef<HTMLDivElement>(null);
+	const gridRef = React.useRef<HTMLDivElement>(null);
+	const prevStepRef = React.useRef(-1);
 	const bpmRef = React.useRef(bpm);
 	bpmRef.current = bpm;
 	const rafRef = React.useRef<number | null>(null);
@@ -92,7 +89,27 @@ export function ChannelRack() {
 		const draw = () => {
 			const stepDur = 60 / bpmRef.current / 4;
 			const elapsed = Math.max(0, ac.currentTime - playStartAudioTime);
-			setCaretStep(Math.floor(elapsed / stepDur) % STEPS);
+			const step = Math.floor(elapsed / stepDur) % STEPS;
+			if (caretRef.current) {
+				caretRef.current.style.left = `${step * STEP_PX + 7}px`;
+			}
+			if (step !== prevStepRef.current && gridRef.current) {
+				gridRef.current
+					.querySelectorAll<HTMLElement>(
+						`[data-step="${prevStepRef.current}"] .step-slit`,
+					)
+					.forEach((el) => {
+						el.style.backgroundColor = "";
+					});
+				gridRef.current
+					.querySelectorAll<HTMLElement>(
+						`[data-step="${step}"][data-active="1"] .step-slit`,
+					)
+					.forEach((el) => {
+						el.style.backgroundColor = "white";
+					});
+				prevStepRef.current = step;
+			}
 			rafRef.current = requestAnimationFrame(draw);
 		};
 		rafRef.current = requestAnimationFrame(draw);
@@ -101,9 +118,10 @@ export function ChannelRack() {
 		};
 	}, [isPlaying, playStartAudioTime]);
 
-	const toggle = (channel: string, step: number) => toggleStep(channel, step);
-
-	const triangleLeft = caretStep * STEP_PX + 7;
+	const toggle = React.useCallback(
+		(channel: string, step: number) => toggleStep(channel, step),
+		[toggleStep],
+	);
 
 	return (
 		<div className="flex h-[286px] shrink-0 flex-col border-t bg-background">
@@ -141,28 +159,31 @@ export function ChannelRack() {
 							</div>
 						))}
 						<div
+							ref={caretRef}
 							className="pointer-events-none absolute bottom-0 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent"
-							style={{ borderTopColor: trackColor, left: triangleLeft }}
+							style={{ borderTopColor: trackColor, left: 7 }}
 						/>
 					</div>
 
-					{CHANNELS.map((ch) => (
-						<div
-							key={ch}
-							className="flex h-[39px] items-center border-b last:border-0"
-						>
-							{pattern[ch].map((active, si) => (
-								<StepButton
-									key={si}
-									active={active}
-									isCaret={si === caretStep}
-									beat={Math.floor(si / 4)}
-									color={trackColor}
-									onClick={() => toggle(ch, si)}
-								/>
-							))}
-						</div>
-					))}
+					<div ref={gridRef}>
+						{CHANNELS.map((ch) => (
+							<div
+								key={ch}
+								className="flex h-[39px] items-center border-b last:border-0"
+							>
+								{pattern[ch].map((active, si) => (
+									<StepButton
+										key={si}
+										active={active}
+										beat={Math.floor(si / 4)}
+										color={trackColor}
+										stepIndex={si}
+										onClick={() => toggle(ch, si)}
+									/>
+								))}
+							</div>
+						))}
+					</div>
 				</div>
 			</div>
 		</div>

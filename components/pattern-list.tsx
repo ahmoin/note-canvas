@@ -20,8 +20,23 @@ import {
 } from "@phosphor-icons/react";
 import * as React from "react";
 import { LiaDrumSolid } from "react-icons/lia";
+import {
+	getAudioCtx,
+	playClosedHihat,
+	playKick,
+	playPercussion,
+	playSnare,
+} from "@/lib/drums";
 import { type TrackSubtype, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+
+const SOUND_PREVIEWS: Record<string, (time: number) => void> = {
+	"808 Kick": playKick,
+	"Snare Crack": playSnare,
+	"Hi-Hat": playClosedHihat,
+	Clap: playSnare,
+	Perc: playPercussion,
+};
 
 type Tab = "sounds" | "instruments" | "effects";
 
@@ -138,17 +153,26 @@ function Item({
 	) => void;
 	onDoubleClick: (name: string, subtype: TrackSubtype) => void;
 }) {
+	const preview = SOUND_PREVIEWS[name];
+	const handleClick = () => {
+		if (preview) {
+			const ac = getAudioCtx();
+			preview(ac.currentTime);
+		}
+	};
+
 	return (
 		<button
 			type="button"
 			draggable
+			onClick={handleClick}
 			onDragStart={(e) => onDragStart(e, name, subtype)}
 			onDoubleClick={() => onDoubleClick(name, subtype)}
 			className={cn(
 				"flex w-full cursor-grab items-center gap-2 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing",
 				indent ? "pl-6 pr-2" : "px-2",
 			)}
-			title="Drag to track or double-click to add"
+			title="Click to preview · double-click to add"
 		>
 			<Icon className="size-3.5 shrink-0 text-muted-foreground" />
 			{name}

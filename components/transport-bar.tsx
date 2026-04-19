@@ -1,6 +1,11 @@
 "use client";
 
-import { MetronomeIcon, PlayIcon, SkipBackIcon, SquareIcon } from "@phosphor-icons/react";
+import {
+	MetronomeIcon,
+	PlayIcon,
+	SkipBackIcon,
+	SquareIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
 
