@@ -453,9 +453,9 @@ export function TracksView({
 								style={{ width: TOTAL_BARS * BAR_PX }}
 							>
 								<div
-									className="relative mx-1 h-[52px] cursor-pointer overflow-hidden rounded-sm transition-shadow"
+									className="relative h-[52px] cursor-pointer overflow-hidden rounded-sm transition-shadow"
 									style={{
-										width: BAR_PX * 8 - 8,
+										width: (STEPS / 4) * BEAT_PX,
 										backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`,
 										boxShadow: selectedClips.has(ti)
 											? `inset 0 0 0 2px ${color}`
