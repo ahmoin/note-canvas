@@ -1,6 +1,6 @@
 "use client";
 
-import { PlayIcon, SkipBackIcon, SquareIcon } from "@phosphor-icons/react";
+import { MetronomeIcon, PlayIcon, SkipBackIcon, SquareIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useDAWStore } from "@/lib/store";
 
@@ -8,7 +8,7 @@ export function TransportBar() {
 	const { isPlaying, togglePlay, bpm, setBpm, currentTick } = useDAWStore();
 
 	return (
-		<div className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3">
+		<div className="relative flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3">
 			<Button variant="ghost" size="icon" className="size-8">
 				<SkipBackIcon className="size-4" />
 			</Button>
@@ -31,8 +31,8 @@ export function TransportBar() {
 					{String(Math.floor(currentTick % 192)).padStart(3, "0")}
 				</span>
 			</div>
-			<div className="ml-auto flex items-center gap-2">
-				<span className="text-xs text-muted-foreground">BPM</span>
+			<div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
+				<MetronomeIcon className="size-4 text-muted-foreground" />
 				<input
 					type="number"
 					min={20}
@@ -41,6 +41,7 @@ export function TransportBar() {
 					onChange={(e) => setBpm(Number(e.target.value))}
 					className="w-14 rounded border bg-transparent px-1.5 py-0.5 text-center text-xs tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
 				/>
+				<span className="text-xs text-muted-foreground">BPM</span>
 			</div>
 		</div>
 	);
