@@ -15,14 +15,18 @@ const StepButton = React.memo(function StepButton({
 	active,
 	beat,
 	color,
-	onClick,
 	stepIndex,
+	channel,
+	onStepMouseDown,
+	onStepMouseEnter,
 }: {
 	active: boolean;
 	beat: number;
 	color: string;
-	onClick: () => void;
 	stepIndex: number;
+	channel: string;
+	onStepMouseDown: (channel: string, step: number) => void;
+	onStepMouseEnter: (channel: string, step: number) => void;
 }) {
 	const inactiveBg =
 		beat % 2 === 0
@@ -34,9 +38,12 @@ const StepButton = React.memo(function StepButton({
 			tabIndex={0}
 			data-step={stepIndex}
 			data-active={active ? "1" : "0"}
-			className="cursor-pointer px-1"
-			onClick={onClick}
-			onKeyDown={(e) => e.key === "Enter" && onClick()}
+			className="cursor-pointer select-none px-1"
+			onMouseDown={() => onStepMouseDown(channel, stepIndex)}
+			onMouseEnter={() => onStepMouseEnter(channel, stepIndex)}
+			onKeyDown={(e) =>
+				e.key === "Enter" && onStepMouseDown(channel, stepIndex)
+			}
 		>
 			<div
 				className={cn(
@@ -65,6 +72,7 @@ export function ChannelRack() {
 		activeTrack,
 		tracks,
 		toggleStep,
+		setStep,
 		playStartAudioTime,
 	} = useDAWStore();
 
@@ -118,9 +126,37 @@ export function ChannelRack() {
 		};
 	}, [isPlaying, playStartAudioTime]);
 
-	const toggle = React.useCallback(
-		(channel: string, step: number) => toggleStep(channel, step),
+	const patternRef = React.useRef(pattern);
+	patternRef.current = pattern;
+
+	const dragRef = React.useRef<{ intent: boolean } | null>(null);
+
+	React.useEffect(() => {
+		const onMouseUp = () => {
+			dragRef.current = null;
+		};
+		window.addEventListener("mouseup", onMouseUp);
+		return () => window.removeEventListener("mouseup", onMouseUp);
+	}, []);
+
+	const handleStepMouseDown = React.useCallback(
+		(channel: string, step: number) => {
+			const currentlyActive = patternRef.current[channel]?.[step] ?? false;
+			dragRef.current = { intent: !currentlyActive };
+			toggleStep(channel, step);
+		},
 		[toggleStep],
+	);
+
+	const handleStepMouseEnter = React.useCallback(
+		(channel: string, step: number) => {
+			if (!dragRef.current) return;
+			const currentlyActive = patternRef.current[channel]?.[step] ?? false;
+			if (currentlyActive !== dragRef.current.intent) {
+				setStep(channel, step, dragRef.current.intent);
+			}
+		},
+		[setStep],
 	);
 
 	return (
@@ -178,7 +214,9 @@ export function ChannelRack() {
 										beat={Math.floor(si / 4)}
 										color={trackColor}
 										stepIndex={si}
-										onClick={() => toggle(ch, si)}
+										channel={ch}
+										onStepMouseDown={handleStepMouseDown}
+										onStepMouseEnter={handleStepMouseEnter}
 									/>
 								))}
 							</div>

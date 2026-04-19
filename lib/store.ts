@@ -49,6 +49,7 @@ interface DAWState {
 	setBpm: (bpm: number) => void;
 	setCurrentTick: (tick: number) => void;
 	toggleStep: (channel: string, step: number) => void;
+	setStep: (channel: string, step: number, value: boolean) => void;
 	setPlayStartAudioTime: (t: number | null) => void;
 	setActiveTrack: (ti: number) => void;
 	setTrackVolume: (track: number, vol: number) => void;
@@ -87,6 +88,17 @@ export const useDAWStore = create<DAWState>((set) => ({
 				...next[s.activeTrack],
 				[channel]: next[s.activeTrack][channel].map((v, i) =>
 					i === step ? !v : v,
+				),
+			};
+			return { patterns: next };
+		}),
+	setStep: (channel, step, value) =>
+		set((s) => {
+			const next = s.patterns.map((p) => ({ ...p }));
+			next[s.activeTrack] = {
+				...next[s.activeTrack],
+				[channel]: next[s.activeTrack][channel].map((v, i) =>
+					i === step ? value : v,
 				),
 			};
 			return { patterns: next };
