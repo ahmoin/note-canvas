@@ -163,7 +163,7 @@ export function ChannelRack() {
 		<div className="flex h-[286px] shrink-0 flex-col border-t bg-background">
 			<div className="flex h-8 shrink-0 items-center justify-between border-b px-3">
 				<span className="text-xs font-medium tracking-wide">
-					Channel Rack — {tracks[activeTrack]?.name ?? "No Track"}
+					Channel Rack - {tracks[activeTrack]?.name ?? "No Track"}
 				</span>
 				<Button variant="ghost" size="icon" className="size-6">
 					<PlusIcon className="size-3" />

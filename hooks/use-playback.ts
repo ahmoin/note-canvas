@@ -1,12 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { DRUM_PLAYERS, getAudioCtx, playPianoNote } from "@/lib/drums";
+import {
+	DRUM_PLAYERS,
+	getAudioCtx,
+	getTrackDest,
+	playPianoNote,
+	setTrackGainValue,
+} from "@/lib/drums";
 import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
 
 const LOOKAHEAD = 0.1;
 const INTERVAL = 25;
 const PIANO_STEPS = 256;
+const SUBS_PER_STEP = PIANO_STEPS / STEPS; // 8 sub-ticks per drum step
 
 export function usePlayback() {
 	const {
@@ -16,6 +23,7 @@ export function usePlayback() {
 		mutedTracks,
 		pianoNotes,
 		tracks,
+		trackVolumes,
 		setCurrentTick,
 		setPlayStartAudioTime,
 	} = useDAWStore();
@@ -30,6 +38,8 @@ export function usePlayback() {
 	pianoRef.current = pianoNotes;
 	const tracksRef = React.useRef(tracks);
 	tracksRef.current = tracks;
+	const trackVolumesRef = React.useRef(trackVolumes);
+	trackVolumesRef.current = trackVolumes;
 
 	const startRef = React.useRef<{
 		audioTime: number;
@@ -38,6 +48,12 @@ export function usePlayback() {
 	} | null>(null);
 	const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 	const rafRef = React.useRef<number | null>(null);
+
+	React.useEffect(() => {
+		trackVolumes.forEach((vol, ti) => {
+			setTrackGainValue(ti, vol / 100);
+		});
+	}, [trackVolumes]);
 
 	React.useEffect(() => {
 		if (!isPlaying) {
@@ -57,13 +73,16 @@ export function usePlayback() {
 		intervalRef.current = setInterval(() => {
 			const s = startRef.current;
 			if (!s) return;
-			const stepDur = 60 / bpmRef.current / 4;
+			const subDur = 60 / bpmRef.current / 4 / SUBS_PER_STEP;
 			while (s.nextStepTime < ac.currentTime + LOOKAHEAD) {
 				const step = s.nextStep;
 				const time = s.nextStepTime;
+				const isDrumTick = step % SUBS_PER_STEP === 0;
+				const drumStep = Math.floor(step / SUBS_PER_STEP) % STEPS;
 
 				patternsRef.current.forEach((pat, ti) => {
 					if (mutedRef.current[ti]) return;
+					const dest = getTrackDest(ti);
 					const subtype = tracksRef.current[ti]?.subtype;
 					if (subtype === "wave") {
 						const notes = pianoRef.current[ti];
@@ -72,28 +91,28 @@ export function usePlayback() {
 								const ci = parseInt(k.split("-")[1], 10);
 								if (ci === step % PIANO_STEPS) {
 									const ri = parseInt(k.split("-")[0], 10);
-									playPianoNote(ri, time);
+									playPianoNote(ri, time, 0.3, dest);
 								}
 							});
 						}
-					} else {
+					} else if (isDrumTick) {
 						for (const ch of CHANNELS) {
-							if (pat[ch]?.[step % STEPS]) DRUM_PLAYERS[ch]?.(time);
+							if (pat[ch]?.[drumStep]) DRUM_PLAYERS[ch]?.(time, dest);
 						}
 					}
 				});
 
 				s.nextStep = (step + 1) % PIANO_STEPS;
-				s.nextStepTime += stepDur;
+				s.nextStepTime += subDur;
 			}
 		}, INTERVAL);
 
 		const drawCaret = () => {
 			const s = startRef.current;
 			if (s) {
-				const stepDur = 60 / bpmRef.current / 4;
+				const drumStepDur = 60 / bpmRef.current / 4;
 				const elapsed = Math.max(0, ac.currentTime - s.audioTime);
-				setCurrentTick(Math.floor(elapsed / stepDur) % STEPS);
+				setCurrentTick(Math.floor(elapsed / drumStepDur) % STEPS);
 			}
 			rafRef.current = requestAnimationFrame(drawCaret);
 		};

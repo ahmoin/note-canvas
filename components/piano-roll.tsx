@@ -279,7 +279,7 @@ export function PianoRoll() {
 				style={{ borderColor: "rgba(255,255,255,0.08)" }}
 			>
 				<span className="text-xs font-medium" style={{ color: vars.text }}>
-					Piano Roll — {tracks[activeTrack]?.name ?? "No Track"}
+					Piano Roll - {tracks[activeTrack]?.name ?? "No Track"}
 				</span>
 			</div>
 

@@ -11,7 +11,7 @@ import { ClipMenu } from "@/components/clip-menu";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
-import { getAudioCtx } from "@/lib/drums";
+import { getAudioCtx, getMasterAnalyser, getTrackAnalyser } from "@/lib/drums";
 import {
 	CHANNELS,
 	type Pattern,
@@ -216,6 +216,143 @@ function Knob({
 	);
 }
 
+const METER_GRAD =
+	"linear-gradient(to bottom, #22cc22, #ccee00, #ffaa00, #ff3300)";
+
+function VUMeter({
+	active,
+	height = 44,
+	volume = 100,
+	getAnalyser = getMasterAnalyser,
+}: {
+	active: boolean;
+	height?: number;
+	volume?: number;
+	getAnalyser?: () => AnalyserNode | null;
+}) {
+	const lFillRef = React.useRef<HTMLDivElement>(null);
+	const rFillRef = React.useRef<HTMLDivElement>(null);
+	const lPeakRef = React.useRef<HTMLDivElement>(null);
+	const rPeakRef = React.useRef<HTMLDivElement>(null);
+	const rafRef = React.useRef<number | null>(null);
+	const st = React.useRef({ l: 0, r: 0, lp: 0, rp: 0, la: 0, ra: 0 });
+	const volumeRef = React.useRef(volume);
+	volumeRef.current = volume;
+	const getAnalyserRef = React.useRef(getAnalyser);
+	getAnalyserRef.current = getAnalyser;
+
+	React.useEffect(() => {
+		const s = st.current;
+		if (!active) {
+			if (rafRef.current) cancelAnimationFrame(rafRef.current);
+			rafRef.current = null;
+			s.l = 0;
+			s.r = 0;
+			s.lp = 0;
+			s.rp = 0;
+			s.la = 0;
+			s.ra = 0;
+			if (lFillRef.current) lFillRef.current.style.height = "0%";
+			if (rFillRef.current) rFillRef.current.style.height = "0%";
+			if (lPeakRef.current) lPeakRef.current.style.top = "100%";
+			if (rPeakRef.current) rPeakRef.current.style.top = "100%";
+			return;
+		}
+		let data: Uint8Array<ArrayBuffer> | null = null;
+		const tick = () => {
+			const analyser = getAnalyserRef.current();
+			if (analyser) {
+				if (!data) data = new Uint8Array(analyser.fftSize);
+				analyser.getByteTimeDomainData(data);
+				let sum = 0;
+				for (let i = 0; i < data.length; i++) {
+					const v = (data[i] - 128) / 128;
+					sum += v * v;
+				}
+				const rms = Math.sqrt(sum / data.length);
+				const amp = Math.min(1, rms * 4 * (volumeRef.current / 100));
+				s.l = s.l * 0.5 + amp * (0.92 + Math.random() * 0.16) * 0.5;
+				s.r = s.r * 0.5 + amp * (0.92 + Math.random() * 0.16) * 0.5;
+				s.l = Math.min(1, s.l);
+				s.r = Math.min(1, s.r);
+			} else {
+				s.l *= 0.85;
+				s.r *= 0.85;
+			}
+			s.la++;
+			s.ra++;
+			if (s.l >= s.lp) {
+				s.lp = s.l;
+				s.la = 0;
+			}
+			if (s.r >= s.rp) {
+				s.rp = s.r;
+				s.ra = 0;
+			}
+			if (s.la > 22) s.lp = Math.max(0, s.lp - 0.013);
+			if (s.ra > 22) s.rp = Math.max(0, s.rp - 0.013);
+			if (lFillRef.current) lFillRef.current.style.height = `${s.l * 100}%`;
+			if (rFillRef.current) rFillRef.current.style.height = `${s.r * 100}%`;
+			if (lPeakRef.current) lPeakRef.current.style.top = `${(1 - s.lp) * 100}%`;
+			if (rPeakRef.current) rPeakRef.current.style.top = `${(1 - s.rp) * 100}%`;
+			rafRef.current = requestAnimationFrame(tick);
+		};
+		rafRef.current = requestAnimationFrame(tick);
+		return () => {
+			if (rafRef.current) {
+				cancelAnimationFrame(rafRef.current);
+				rafRef.current = null;
+			}
+		};
+	}, [active]);
+
+	return (
+		<div
+			className="flex flex-row items-center justify-center"
+			style={{ height }}
+		>
+			{(
+				[
+					[lFillRef, lPeakRef],
+					[rFillRef, rPeakRef],
+				] as [
+					React.RefObject<HTMLDivElement>,
+					React.RefObject<HTMLDivElement>,
+				][]
+			).map(([fillRef, peakRef], i) => (
+				<div
+					key={i}
+					className="h-full flex rotate-180 rounded-sm bg-black overflow-hidden"
+					style={{ marginLeft: 1.5, marginRight: 1.5 }}
+				>
+					<div className="h-full relative" style={{ width: 3 }}>
+						<div
+							ref={fillRef}
+							className="w-full overflow-hidden absolute left-0 top-0"
+							style={{ height: "0%", transition: "height 0.08s linear" }}
+						>
+							<div
+								className="w-full"
+								style={{ height, background: METER_GRAD }}
+							/>
+						</div>
+						<div
+							ref={peakRef}
+							className="absolute"
+							style={{
+								top: "100%",
+								height: 1,
+								width: "100%",
+								backgroundColor: "rgb(255,128,0)",
+							}}
+						/>
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
 function rulerBeats() {
 	const beats: { label: string; isMajor: boolean }[] = [];
 	for (let bar = 0; bar < TOTAL_BARS; bar++) {
@@ -248,12 +385,16 @@ export function TracksView({
 		soloTrack,
 		mutedTracks,
 		pianoNotes,
+		masterVolume,
+		masterPan,
 		setTrackVolume,
 		setTrackPan,
 		setSoloTrack,
 		toggleMuteTrack,
 		addTrack,
 		setActiveTrack,
+		setMasterVolume,
+		setMasterPan,
 	} = useDAWStore();
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
@@ -335,71 +476,115 @@ export function TracksView({
 			</div>
 
 			<div className="flex flex-1 overflow-hidden">
-				<div className="flex w-48 shrink-0 flex-col border-r">
+				<div className="relative flex w-48 shrink-0 flex-col border-r">
 					<div className="h-6 shrink-0 border-b" />
 					{tracks.map((track, ti) => {
 						const color = trackColors[ti];
 						return (
 							<div
 								key={ti}
-								className="flex h-16 shrink-0 flex-col justify-between border-b border-l-[3px] bg-black/20 px-2 py-1.5"
+								className="flex h-16 shrink-0 border-b border-l-[3px] bg-black/20"
 								style={{ borderLeftColor: color }}
 							>
-								<div className="flex items-center gap-1.5">
-									<PlayIcon className="size-3" style={{ fill: color, color }} />
-									<span className="text-xs font-medium text-white/80">
-										{track.name}
-									</span>
-								</div>
-								<div className="flex items-center gap-2">
-									<Knob
-										label="PAN"
-										value={trackPans[ti]}
-										min={-50}
-										max={50}
-										onChange={(v) => setTrackPan(ti, v)}
-										red={color}
-									/>
-									<Knob
-										label="VOL"
-										value={trackVolumes[ti]}
-										onChange={(v) => setTrackVolume(ti, v)}
-										red={color}
-									/>
-									<div className="size-2 rounded-full bg-white/20" />
-									<button
-										type="button"
-										onClick={() => setSoloTrack(ti)}
-										className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
-										title={soloTrack === ti ? "Unsolo" : "Solo"}
-									>
-										<HeadphonesIcon
-											className="size-3.5"
-											style={{
-												color:
-													soloTrack === ti
-														? color
-														: soloTrack !== null
-															? `color-mix(in srgb, ${color} 25%, transparent)`
-															: `color-mix(in srgb, ${color} 70%, transparent)`,
-											}}
+								<div className="flex flex-1 flex-col justify-between px-2 py-1.5">
+									<div className="flex items-center gap-1.5">
+										<PlayIcon
+											className="size-3"
+											style={{ fill: color, color }}
 										/>
-									</button>
-									<button
-										type="button"
-										onClick={() => toggleMuteTrack(ti)}
-										title={mutedTracks[ti] ? "Enable audio" : "Disable audio"}
-										className={cn(
-											"size-2 rounded-full transition-colors",
-											mutedTracks[ti]
-												? "bg-white/20"
-												: "bg-green-400 shadow-[0_0_4px_#4ade80]",
-										)}
+										<span className="text-xs font-medium text-white/80">
+											{track.name}
+										</span>
+									</div>
+									<div className="flex items-center gap-2">
+										<Knob
+											label="PAN"
+											value={trackPans[ti]}
+											min={-50}
+											max={50}
+											onChange={(v) => setTrackPan(ti, v)}
+											red={color}
+										/>
+										<Knob
+											label="VOL"
+											value={trackVolumes[ti]}
+											onChange={(v) => setTrackVolume(ti, v)}
+											red={color}
+										/>
+										<div className="size-2 rounded-full bg-white/20" />
+										<button
+											type="button"
+											onClick={() => setSoloTrack(ti)}
+											className="flex items-center justify-center rounded-sm p-0.5 transition-colors"
+											title={soloTrack === ti ? "Unsolo" : "Solo"}
+										>
+											<HeadphonesIcon
+												className="size-3.5"
+												style={{
+													color:
+														soloTrack === ti
+															? color
+															: soloTrack !== null
+																? `color-mix(in srgb, ${color} 25%, transparent)`
+																: `color-mix(in srgb, ${color} 70%, transparent)`,
+												}}
+											/>
+										</button>
+										<button
+											type="button"
+											onClick={() => toggleMuteTrack(ti)}
+											title={mutedTracks[ti] ? "Enable audio" : "Disable audio"}
+											className={cn(
+												"size-2 rounded-full transition-colors",
+												mutedTracks[ti]
+													? "bg-white/20"
+													: "bg-green-400 shadow-[0_0_4px_#4ade80]",
+											)}
+										/>
+									</div>
+								</div>
+								<div className="flex items-center py-1.5 pr-2">
+									<VUMeter
+										active={isPlaying}
+										height={44}
+										volume={trackVolumes[ti]}
+										getAnalyser={() => getTrackAnalyser(ti)}
 									/>
 								</div>
 							</div>
 						);
 					})}
+					<div
+						className="absolute bottom-0 left-0 right-0 flex shrink-0 border-t border-l-[3px] bg-black/30"
+						style={{ borderLeftColor: "rgba(255,255,255,0.15)" }}
+					>
+						<div className="flex flex-1 flex-col justify-start px-2 pt-1.5 pb-3">
+							<div className="mb-1">
+								<span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+									Main
+								</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<Knob
+									label="PAN"
+									value={masterPan}
+									min={-50}
+									max={50}
+									onChange={setMasterPan}
+									red="rgb(255,255,255)"
+								/>
+								<Knob
+									label="VOL"
+									value={masterVolume}
+									onChange={setMasterVolume}
+									red="rgb(255,255,255)"
+								/>
+							</div>
+						</div>
+						<div className="flex items-center py-1.5 pr-2">
+							<VUMeter active={isPlaying} height={44} volume={masterVolume} getAnalyser={getMasterAnalyser} />
+						</div>
+					</div>
 				</div>
 
 				<div
