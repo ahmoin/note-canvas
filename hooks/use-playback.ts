@@ -13,7 +13,7 @@ import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
 const LOOKAHEAD = 0.1;
 const INTERVAL = 25;
 const PIANO_STEPS = 256;
-const SUBS_PER_STEP = PIANO_STEPS / STEPS; // 8 sub-ticks per drum step
+const SUBS_PER_STEP = PIANO_STEPS / STEPS;
 
 export function usePlayback() {
 	const {
