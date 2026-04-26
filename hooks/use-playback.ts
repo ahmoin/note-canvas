@@ -116,7 +116,8 @@ export function usePlayback() {
 						for (const ch of CHANNELS) {
 							if (!pat[ch]?.[drumStep]) continue;
 							if (channelMutedRef.current[ti]?.[ch]) continue;
-							const chanVol = (channelVolumesRef.current[ti]?.[ch] ?? 82.5) / 100;
+							const chanVol =
+								(channelVolumesRef.current[ti]?.[ch] ?? 82.5) / 100;
 							const chanPan = (channelPansRef.current[ti]?.[ch] ?? 0) / 50;
 							let node: AudioNode = dest;
 							if (chanPan !== 0) {

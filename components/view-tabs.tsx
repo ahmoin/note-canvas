@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const VIEWS = [
 	{ id: "tracks", label: "Tracks" },
 	{ id: "piano-roll", label: "Piano Roll" },
-	{ id: "mixer", label: "Mixer" },
-	{ id: "playlist", label: "Playlist" },
+	// { id: "mixer", label: "Mixer" },
+	// { id: "playlist", label: "Playlist" },
 ] as const;
 
 export function ViewTabs() {

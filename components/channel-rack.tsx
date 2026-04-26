@@ -65,7 +65,12 @@ function ChannelKnob({
 		const onMouseMove = (mv: MouseEvent) => {
 			if (!dragRef.current) return;
 			const delta = (dragRef.current.y - mv.clientY) / 100;
-			onChange(Math.max(min, Math.min(max, dragRef.current.value + delta * (max - min))));
+			onChange(
+				Math.max(
+					min,
+					Math.min(max, dragRef.current.value + delta * (max - min)),
+				),
+			);
 		};
 		const onMouseUp = () => {
 			dragRef.current = null;
@@ -82,11 +87,27 @@ function ChannelKnob({
 			onMouseDown={onMouseDown}
 			title={`${label}: ${displayValue}`}
 		>
-			<svg width={CH_KNOB_SIZE} height={CH_KNOB_SIZE} className="absolute inset-0">
+			<svg
+				width={CH_KNOB_SIZE}
+				height={CH_KNOB_SIZE}
+				className="absolute inset-0"
+			>
 				<title>{label}</title>
-				<path d={bgPath} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" strokeLinecap="round" />
+				<path
+					d={bgPath}
+					fill="none"
+					stroke="rgba(255,255,255,0.08)"
+					strokeWidth="1.5"
+					strokeLinecap="round"
+				/>
 				{valPath && (
-					<path d={valPath} fill="none" style={{ stroke: `color-mix(in srgb, ${color} 65%, transparent)` }} strokeWidth="1.5" strokeLinecap="round" />
+					<path
+						d={valPath}
+						fill="none"
+						style={{ stroke: `color-mix(in srgb, ${color} 65%, transparent)` }}
+						strokeWidth="1.5"
+						strokeLinecap="round"
+					/>
 				)}
 			</svg>
 			<div className="absolute inset-[3px] rounded-full bg-gradient-to-b from-[#2e1111] to-[#150808] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)] ring-1 ring-black/70" />
@@ -94,7 +115,10 @@ function ChannelKnob({
 				className="absolute inset-[3px] flex items-start justify-center pt-[2px]"
 				style={{ transform: `rotate(${angle}deg)` }}
 			>
-				<div className="h-[5px] w-[1.5px] rounded-full" style={{ backgroundColor: `color-mix(in srgb, ${color} 90%, white)` }} />
+				<div
+					className="h-[5px] w-[1.5px] rounded-full"
+					style={{ backgroundColor: `color-mix(in srgb, ${color} 90%, white)` }}
+				/>
 			</div>
 		</div>
 	);

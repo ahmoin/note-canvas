@@ -241,7 +241,10 @@ export const useDAWStore = create<DAWState>((set) => ({
 		set((s) => ({
 			channelVolumes: {
 				...s.channelVolumes,
-				[trackIndex]: { ...(s.channelVolumes[trackIndex] ?? {}), [channel]: vol },
+				[trackIndex]: {
+					...(s.channelVolumes[trackIndex] ?? {}),
+					[channel]: vol,
+				},
 			},
 		})),
 	setChannelPan: (trackIndex, channel, pan) =>

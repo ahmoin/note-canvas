@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { ChannelRack } from "@/components/channel-rack";
-import { Mixer } from "@/components/mixer";
+// import { Mixer } from "@/components/mixer";
 import { PatternList } from "@/components/pattern-list";
 import { PianoRoll } from "@/components/piano-roll";
-import { Playlist } from "@/components/playlist";
+// import { Playlist } from "@/components/playlist";
 import { ThemeSelector } from "@/components/theme-selector";
 import { TracksView } from "@/components/tracks-view";
 import { TransportBar } from "@/components/transport-bar";
@@ -41,7 +41,7 @@ export default function Page() {
 	return (
 		<div className="flex h-screen flex-col overflow-hidden bg-background">
 			<TransportBar />
-			<ViewTabs />
+			{/* <ViewTabs /> */}
 			<div className="flex min-h-0 flex-1 overflow-hidden">
 				{showPanel && <PatternList tab={panelTab} setTab={setPanelTab} />}
 				<div className="flex flex-1 flex-col overflow-hidden">
@@ -51,9 +51,9 @@ export default function Page() {
 							onTogglePanel={() => setShowPanel((p) => !p)}
 						/>
 					)}
-					{activeView === "piano-roll" && <PianoRoll />}
-					{activeView === "mixer" && <Mixer />}
-					{activeView === "playlist" && <Playlist />}
+					{/* {activeView === "piano-roll" && <PianoRoll />} */}
+					{/* {activeView === "mixer" && <Mixer />} */}
+					{/* {activeView === "playlist" && <Playlist />} */}
 				</div>
 			</div>
 			{activeSubtype === "wave" ? <PianoRoll /> : <ChannelRack />}
