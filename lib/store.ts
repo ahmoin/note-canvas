@@ -24,6 +24,16 @@ export type TrackSubtype =
 	| "effect";
 export type TrackItem = { name: string; type: string; subtype: TrackSubtype };
 
+export type TrackSnapshot = {
+	track: TrackItem;
+	pattern: Pattern;
+	pianoNotes: PianoNote[];
+	patternLengthBars: number;
+	trackLoop: boolean;
+	trackVolume: number;
+	trackPan: number;
+};
+
 export type PianoNote = {
 	row: number;
 	start: number;
@@ -80,6 +90,12 @@ interface DAWState {
 	setSoloTrack: (track: number | null) => void;
 	toggleMuteTrack: (track: number) => void;
 	addTrack: (name: string, type: string, subtype?: TrackSubtype) => void;
+	duplicateTrack: (ti: number) => void;
+	removeTrack: (ti: number) => void;
+	renameTrack: (ti: number, name: string) => void;
+	clipboardTrack: TrackSnapshot | null;
+	copyTrack: (ti: number) => void;
+	cutTrack: (ti: number) => void;
 	pianoNotes: Record<number, PianoNote[]>;
 	patternLengthBars: number[];
 	trackLoop: boolean[];
@@ -132,6 +148,7 @@ export const useDAWStore = create<DAWState>((set) => ({
 	channelVolumes: {},
 	channelPans: {},
 	channelMuted: {},
+	clipboardTrack: null,
 	setActiveView: (view) => set({ activeView: view }),
 	togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
 	setBpm: (bpm) => set({ bpm }),
@@ -274,4 +291,147 @@ export const useDAWStore = create<DAWState>((set) => ({
 			patternLengthBars: [...s.patternLengthBars, 16],
 			trackLoop: [...s.trackLoop, true],
 		})),
+	duplicateTrack: (ti) =>
+		set((s) => {
+			const insertAt = ti + 1;
+			const tracks = [
+				...s.tracks.slice(0, insertAt),
+				{ ...s.tracks[ti] },
+				...s.tracks.slice(insertAt),
+			];
+			const patterns = [
+				...s.patterns.slice(0, insertAt),
+				JSON.parse(JSON.stringify(s.patterns[ti])),
+				...s.patterns.slice(insertAt),
+			];
+			const trackVolumes = [
+				...s.trackVolumes.slice(0, insertAt),
+				s.trackVolumes[ti],
+				...s.trackVolumes.slice(insertAt),
+			];
+			const trackPans = [
+				...s.trackPans.slice(0, insertAt),
+				s.trackPans[ti],
+				...s.trackPans.slice(insertAt),
+			];
+			const mutedTracks = [
+				...s.mutedTracks.slice(0, insertAt),
+				false,
+				...s.mutedTracks.slice(insertAt),
+			];
+			const patternLengthBars = [
+				...s.patternLengthBars.slice(0, insertAt),
+				s.patternLengthBars[ti],
+				...s.patternLengthBars.slice(insertAt),
+			];
+			const trackLoop = [
+				...s.trackLoop.slice(0, insertAt),
+				s.trackLoop[ti],
+				...s.trackLoop.slice(insertAt),
+			];
+			const pianoNotes: Record<number, PianoNote[]> = {};
+			for (const [k, v] of Object.entries(s.pianoNotes)) {
+				const n = Number(k);
+				if (n < insertAt) pianoNotes[n] = v;
+				else pianoNotes[n + 1] = v;
+			}
+			pianoNotes[insertAt] = (s.pianoNotes[ti] ?? []).map((n) => ({ ...n }));
+			return {
+				tracks,
+				patterns,
+				trackVolumes,
+				trackPans,
+				mutedTracks,
+				patternLengthBars,
+				trackLoop,
+				pianoNotes,
+				activeTrack: insertAt,
+			};
+		}),
+	removeTrack: (ti) =>
+		set((s) => {
+			if (s.tracks.length <= 1) return s;
+			const tracks = s.tracks.filter((_, i) => i !== ti);
+			const patterns = s.patterns.filter((_, i) => i !== ti);
+			const trackVolumes = s.trackVolumes.filter((_, i) => i !== ti);
+			const trackPans = s.trackPans.filter((_, i) => i !== ti);
+			const mutedTracks = s.mutedTracks.filter((_, i) => i !== ti);
+			const patternLengthBars = s.patternLengthBars.filter((_, i) => i !== ti);
+			const trackLoop = s.trackLoop.filter((_, i) => i !== ti);
+			const pianoNotes: Record<number, PianoNote[]> = {};
+			for (const [k, v] of Object.entries(s.pianoNotes)) {
+				const n = Number(k);
+				if (n < ti) pianoNotes[n] = v;
+				else if (n > ti) pianoNotes[n - 1] = v;
+			}
+			const activeTrack = Math.min(s.activeTrack, tracks.length - 1);
+			return {
+				tracks,
+				patterns,
+				trackVolumes,
+				trackPans,
+				mutedTracks,
+				patternLengthBars,
+				trackLoop,
+				pianoNotes,
+				activeTrack,
+			};
+		}),
+	renameTrack: (ti, name) =>
+		set((s) => {
+			const tracks = [...s.tracks];
+			tracks[ti] = { ...tracks[ti], name };
+			return { tracks };
+		}),
+	copyTrack: (ti) =>
+		set((s) => ({
+			clipboardTrack: {
+				track: { ...s.tracks[ti] },
+				pattern: JSON.parse(JSON.stringify(s.patterns[ti])),
+				pianoNotes: (s.pianoNotes[ti] ?? []).map((n) => ({ ...n })),
+				patternLengthBars: s.patternLengthBars[ti],
+				trackLoop: s.trackLoop[ti],
+				trackVolume: s.trackVolumes[ti],
+				trackPan: s.trackPans[ti],
+			},
+		})),
+	cutTrack: (ti) =>
+		set((s) => {
+			if (s.tracks.length <= 1) return s;
+			const clipboard: TrackSnapshot = {
+				track: { ...s.tracks[ti] },
+				pattern: JSON.parse(JSON.stringify(s.patterns[ti])),
+				pianoNotes: (s.pianoNotes[ti] ?? []).map((n) => ({ ...n })),
+				patternLengthBars: s.patternLengthBars[ti],
+				trackLoop: s.trackLoop[ti],
+				trackVolume: s.trackVolumes[ti],
+				trackPan: s.trackPans[ti],
+			};
+			const tracks = s.tracks.filter((_, i) => i !== ti);
+			const patterns = s.patterns.filter((_, i) => i !== ti);
+			const trackVolumes = s.trackVolumes.filter((_, i) => i !== ti);
+			const trackPans = s.trackPans.filter((_, i) => i !== ti);
+			const mutedTracks = s.mutedTracks.filter((_, i) => i !== ti);
+			const patternLengthBars = s.patternLengthBars.filter((_, i) => i !== ti);
+			const trackLoop = s.trackLoop.filter((_, i) => i !== ti);
+			const pianoNotes: Record<number, PianoNote[]> = {};
+			for (const [k, v] of Object.entries(s.pianoNotes)) {
+				const n = Number(k);
+				if (n < ti) pianoNotes[n] = v;
+				else if (n > ti) pianoNotes[n - 1] = v;
+			}
+			const activeTrack = Math.min(s.activeTrack, tracks.length - 1);
+			return {
+				clipboardTrack: clipboard,
+				tracks,
+				patterns,
+				trackVolumes,
+				trackPans,
+				mutedTracks,
+				patternLengthBars,
+				trackLoop,
+				pianoNotes,
+				activeTrack,
+			};
+		}),
 }));

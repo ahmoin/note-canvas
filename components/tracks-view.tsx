@@ -7,6 +7,7 @@ import {
 	SidebarSimpleIcon,
 } from "@phosphor-icons/react";
 import * as React from "react";
+import type { ClipMenuHandlers } from "@/components/clip-menu";
 import { ClipMenu } from "@/components/clip-menu";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
@@ -385,6 +386,7 @@ export function TracksView({
 		pianoNotes,
 		masterVolume,
 		masterPan,
+		trackLoop,
 		setTrackVolume,
 		setTrackPan,
 		setSoloTrack,
@@ -393,6 +395,12 @@ export function TracksView({
 		setActiveTrack,
 		setMasterVolume,
 		setMasterPan,
+		duplicateTrack,
+		removeTrack,
+		renameTrack,
+		copyTrack,
+		cutTrack,
+		setTrackLoop,
 	} = useDAWStore();
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
@@ -403,6 +411,92 @@ export function TracksView({
 		new Set([0]),
 	);
 	const [isDragOver, setIsDragOver] = React.useState(false);
+
+	const makeClipHandlers = React.useCallback(
+		(ti: number): ClipMenuHandlers => ({
+			onDuplicate: () => duplicateTrack(ti),
+			onMakeUnique: () => duplicateTrack(ti),
+			onLoopSelection: () => setTrackLoop(ti, !trackLoop[ti]),
+			onRename: () => {
+				const name = window.prompt("Track name:", tracks[ti]?.name ?? "");
+				if (name != null && name.trim()) renameTrack(ti, name.trim());
+			},
+			onDisable: () => toggleMuteTrack(ti),
+			onCut: () => cutTrack(ti),
+			onCopy: () => copyTrack(ti),
+			onDelete: () => removeTrack(ti),
+		}),
+		[
+			duplicateTrack,
+			removeTrack,
+			renameTrack,
+			copyTrack,
+			cutTrack,
+			toggleMuteTrack,
+			setTrackLoop,
+			trackLoop,
+			tracks,
+		],
+	);
+
+	React.useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+			const ti = activeTrack;
+			const ctrl = e.ctrlKey || e.metaKey;
+			if (ctrl && e.shiftKey && e.key === "D") {
+				e.preventDefault();
+				duplicateTrack(ti);
+				return;
+			}
+			if (ctrl && e.key === "d") {
+				e.preventDefault();
+				duplicateTrack(ti);
+				return;
+			}
+			if (ctrl && e.key === "n") {
+				e.preventDefault();
+				duplicateTrack(ti);
+				return;
+			}
+			if (ctrl && e.key === "l") {
+				e.preventDefault();
+				setTrackLoop(ti, !trackLoop[ti]);
+				return;
+			}
+			if (ctrl && e.key === "x") {
+				e.preventDefault();
+				cutTrack(ti);
+				return;
+			}
+			if (ctrl && e.key === "c") {
+				e.preventDefault();
+				copyTrack(ti);
+				return;
+			}
+			if (!ctrl && e.key === "o") {
+				toggleMuteTrack(ti);
+				return;
+			}
+			if (!ctrl && (e.key === "Backspace" || e.key === "Delete")) {
+				removeTrack(ti);
+				return;
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [
+		activeTrack,
+		trackLoop,
+		duplicateTrack,
+		removeTrack,
+		renameTrack,
+		copyTrack,
+		cutTrack,
+		toggleMuteTrack,
+		setTrackLoop,
+	]);
 
 	const handleDrop = (e: React.DragEvent) => {
 		e.preventDefault();
@@ -665,7 +759,7 @@ export function TracksView({
 									>
 										{track.name}
 									</span>
-									<ClipMenu>
+									<ClipMenu handlers={makeClipHandlers(ti)}>
 										<button
 											type="button"
 											className="absolute right-1.5 top-1 text-[9px] text-white/30 hover:text-white/70 transition-colors"
