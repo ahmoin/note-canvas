@@ -55,7 +55,10 @@ export function playKick(time: number, dest?: AudioNode) {
 	osc.frequency.exponentialRampToValueAtTime(40, time + 0.55);
 
 	const shaper = ac.createWaveShaper();
-	shaper.curve = getClipCurve();
+	// Type 'Float32Array<ArrayBufferLike>' is not assignable to type 'Float32Array<ArrayBuffer>'.
+  	// Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+    // Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+	// shaper.curve = getClipCurve();
 	shaper.oversample = "4x";
 
 	const bodyGain = ac.createGain();

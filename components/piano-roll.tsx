@@ -362,7 +362,8 @@ export function PianoRoll() {
 		const draw = () => {
 			if (playheadRef.current) {
 				const elapsed = Math.max(0, ac.currentTime - playStartAudioTime);
-				const px = elapsed * (bpmRef.current / 60) * BEAT_W;
+				// 60 / 8 = 7.5
+				const px = elapsed * (bpmRef.current / 7.5) * BEAT_W;
 				playheadRef.current.style.transform = `translateX(${px % TOTAL_W}px)`;
 			}
 			rafRef.current = requestAnimationFrame(draw);

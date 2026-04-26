@@ -20,7 +20,3 @@ A DAW website for composing and playing back music. Supports drum sequencing and
 6. **Loop**: toggle the `LOOP` button to control whether a track's pattern loops during playback
 7. **BPM**: adjust the tempo in the toolbar
 8. **Play/Stop**: hit the play button to start playback; all tracks play simultaneously
-
-## Known Issues
-
-- Piano roll playhead does not stay in sync with the track view playhead when the piano roll pattern length differs from the drum pattern length
