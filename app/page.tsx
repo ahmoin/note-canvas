@@ -19,9 +19,8 @@ export default function Page() {
 	const { activeView, togglePlay, tracks, activeTrack } = useDAWStore();
 	const activeSubtype = tracks[activeTrack]?.subtype;
 	const [showPanel, setShowPanel] = React.useState(true);
-	const [panelTab, setPanelTab] = React.useState<
-		"sounds" | "instruments" | "effects"
-	>("sounds");
+	// "sounds" | "instruments" | "effects"
+	const [panelTab, setPanelTab] = React.useState<"instruments">("instruments");
 
 	React.useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {

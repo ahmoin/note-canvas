@@ -39,7 +39,8 @@ const SOUND_PREVIEWS: Record<string, (time: number) => void> = {
 	Perc: playPercussion,
 };
 
-type Tab = "sounds" | "instruments" | "effects";
+// type Tab = "sounds" | "instruments" | "effects";
+type Tab = "instruments";
 
 type FlatItem = {
 	kind: "item";
@@ -57,19 +58,19 @@ type GroupItem = {
 type ListEntry = FlatItem | GroupItem;
 
 const TABS: { id: Tab; label: string }[] = [
-	{ id: "sounds", label: "Sounds" },
+	// { id: "sounds", label: "Sounds" },
 	{ id: "instruments", label: "Instruments" },
-	{ id: "effects", label: "Effects" },
+	// { id: "effects", label: "Effects" },
 ];
 
 const CONTENT: Record<Tab, ListEntry[]> = {
-	sounds: [
-		{ kind: "item", name: "808 Kick", icon: CircleIcon, subtype: "sound" },
-		{ kind: "item", name: "Snare Crack", icon: LiaDrumSolid, subtype: "sound" },
-		{ kind: "item", name: "Hi-Hat", icon: MusicNoteIcon, subtype: "sound" },
-		{ kind: "item", name: "Clap", icon: HandsClappingIcon, subtype: "sound" },
-		{ kind: "item", name: "Perc", icon: MetronomeIcon, subtype: "sound" },
-	],
+	// sounds: [
+	// 	{ kind: "item", name: "808 Kick", icon: CircleIcon, subtype: "sound" },
+	// 	{ kind: "item", name: "Snare Crack", icon: LiaDrumSolid, subtype: "sound" },
+	// 	{ kind: "item", name: "Hi-Hat", icon: MusicNoteIcon, subtype: "sound" },
+	// 	{ kind: "item", name: "Clap", icon: HandsClappingIcon, subtype: "sound" },
+	// 	{ kind: "item", name: "Perc", icon: MetronomeIcon, subtype: "sound" },
+	// ],
 	instruments: [
 		{ kind: "item", name: "Audio Track", icon: WaveformIcon, subtype: "audio" },
 		{
@@ -106,33 +107,33 @@ const CONTENT: Record<Tab, ListEntry[]> = {
 			subtype: "sampler",
 		},
 	],
-	effects: [
-		{ kind: "item", name: "Reverb", icon: SpeakerHighIcon, subtype: "effect" },
-		{
-			kind: "item",
-			name: "Delay",
-			icon: ClockCountdownIcon,
-			subtype: "effect",
-		},
-		{
-			kind: "item",
-			name: "Distortion",
-			icon: LightningIcon,
-			subtype: "effect",
-		},
-		{
-			kind: "item",
-			name: "Compressor",
-			icon: ArrowsInSimpleIcon,
-			subtype: "effect",
-		},
-		{
-			kind: "item",
-			name: "EQ",
-			icon: SlidersHorizontalIcon,
-			subtype: "effect",
-		},
-	],
+	// effects: [
+	// 	{ kind: "item", name: "Reverb", icon: SpeakerHighIcon, subtype: "effect" },
+	// 	{
+	// 		kind: "item",
+	// 		name: "Delay",
+	// 		icon: ClockCountdownIcon,
+	// 		subtype: "effect",
+	// 	},
+	// 	{
+	// 		kind: "item",
+	// 		name: "Distortion",
+	// 		icon: LightningIcon,
+	// 		subtype: "effect",
+	// 	},
+	// 	{
+	// 		kind: "item",
+	// 		name: "Compressor",
+	// 		icon: ArrowsInSimpleIcon,
+	// 		subtype: "effect",
+	// 	},
+	// 	{
+	// 		kind: "item",
+	// 		name: "EQ",
+	// 		icon: SlidersHorizontalIcon,
+	// 		subtype: "effect",
+	// 	},
+	// ],
 };
 
 function Item({
