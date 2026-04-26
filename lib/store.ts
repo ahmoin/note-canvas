@@ -24,7 +24,12 @@ export type TrackSubtype =
 	| "effect";
 export type TrackItem = { name: string; type: string; subtype: TrackSubtype };
 
-export type PianoNote = { row: number; start: number; duration: number };
+export type PianoNote = {
+	row: number;
+	start: number;
+	duration: number;
+	velocity: number;
+};
 
 const DEFAULT_TRACKS: TrackItem[] = [
 	{ name: "Drum Track", type: "sound", subtype: "drum" },
@@ -43,7 +48,7 @@ function makeDefaultGuitarNotes(): PianoNote[] {
 			[52, 96],
 			[55, 112],
 		] as [number, number][]
-	).map(([row, start]) => ({ row, start, duration: 8 }));
+	).map(([row, start]) => ({ row, start, duration: 8, velocity: 100 }));
 }
 
 const emptyPattern = (): Pattern =>
@@ -85,8 +90,11 @@ interface DAWState {
 		newRow: number,
 		newStart: number,
 	) => void;
-	noteVelocities: Record<number, Record<number, number>>;
-	setNoteVelocity: (trackIndex: number, sub: number, velocity: number) => void;
+	setNoteVelocity: (
+		trackIndex: number,
+		noteIndex: number,
+		velocity: number,
+	) => void;
 	masterVolume: number;
 	masterPan: number;
 	setMasterVolume: (vol: number) => void;
@@ -107,7 +115,6 @@ export const useDAWStore = create<DAWState>((set) => ({
 	soloTrack: null,
 	mutedTracks: Array(DEFAULT_TRACKS.length).fill(false),
 	pianoNotes: { 1: makeDefaultGuitarNotes() },
-	noteVelocities: {},
 	masterVolume: 82.5,
 	masterPan: 0,
 	setActiveView: (view) => set({ activeView: view }),
@@ -191,16 +198,16 @@ export const useDAWStore = create<DAWState>((set) => ({
 			notes[noteIndex] = { ...notes[noteIndex], row: newRow, start: newStart };
 			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: notes } };
 		}),
-	setNoteVelocity: (trackIndex, sub, velocity) =>
-		set((s) => ({
-			noteVelocities: {
-				...s.noteVelocities,
-				[trackIndex]: {
-					...s.noteVelocities[trackIndex],
-					[sub]: Math.max(0, Math.min(127, velocity)),
-				},
-			},
-		})),
+	setNoteVelocity: (trackIndex, noteIndex, velocity) =>
+		set((s) => {
+			const notes = [...(s.pianoNotes[trackIndex] ?? [])];
+			if (noteIndex < 0 || noteIndex >= notes.length) return s;
+			notes[noteIndex] = {
+				...notes[noteIndex],
+				velocity: Math.max(0, Math.min(127, velocity)),
+			};
+			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: notes } };
+		}),
 	setMasterVolume: (vol) => set({ masterVolume: vol }),
 	setMasterPan: (pan) => set({ masterPan: pan }),
 	addTrack: (name, type, subtype = "sound") =>

@@ -17,7 +17,6 @@ export function usePlayback() {
 		patterns,
 		mutedTracks,
 		pianoNotes,
-		noteVelocities,
 		tracks,
 		trackVolumes,
 		setCurrentTick,
@@ -32,8 +31,6 @@ export function usePlayback() {
 	mutedRef.current = mutedTracks;
 	const pianoRef = React.useRef(pianoNotes);
 	pianoRef.current = pianoNotes;
-	const noteVelocitiesRef = React.useRef(noteVelocities);
-	noteVelocitiesRef.current = noteVelocities;
 	const tracksRef = React.useRef(tracks);
 	tracksRef.current = tracks;
 	const trackVolumesRef = React.useRef(trackVolumes);
@@ -88,8 +85,7 @@ export function usePlayback() {
 							notes.forEach((note) => {
 								if (note.start === step % PIANO_STEPS) {
 									const durationSecs = note.duration * subDur;
-									const vel =
-										(noteVelocitiesRef.current[ti]?.[note.start] ?? 100) / 127;
+									const vel = note.velocity / 127;
 									playPianoNote(note.row, time, durationSecs, dest, vel);
 								}
 							});
