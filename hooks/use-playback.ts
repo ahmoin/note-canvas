@@ -22,6 +22,7 @@ export function usePlayback() {
 		patterns,
 		mutedTracks,
 		pianoNotes,
+		noteVelocities,
 		tracks,
 		trackVolumes,
 		setCurrentTick,
@@ -36,6 +37,8 @@ export function usePlayback() {
 	mutedRef.current = mutedTracks;
 	const pianoRef = React.useRef(pianoNotes);
 	pianoRef.current = pianoNotes;
+	const noteVelocitiesRef = React.useRef(noteVelocities);
+	noteVelocitiesRef.current = noteVelocities;
 	const tracksRef = React.useRef(tracks);
 	tracksRef.current = tracks;
 	const trackVolumesRef = React.useRef(trackVolumes);
@@ -87,11 +90,12 @@ export function usePlayback() {
 					if (subtype === "wave") {
 						const notes = pianoRef.current[ti];
 						if (notes) {
-							Object.keys(notes).forEach((k) => {
-								const ci = parseInt(k.split("-")[1], 10);
-								if (ci === step % PIANO_STEPS) {
-									const ri = parseInt(k.split("-")[0], 10);
-									playPianoNote(ri, time, 0.3, dest);
+							notes.forEach((note) => {
+								if (note.start === step % PIANO_STEPS) {
+									const durationSecs = note.duration * subDur;
+									const vel =
+										(noteVelocitiesRef.current[ti]?.[note.start] ?? 100) / 127;
+									playPianoNote(note.row, time, durationSecs, dest, vel);
 								}
 							});
 						}

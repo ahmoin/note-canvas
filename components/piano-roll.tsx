@@ -4,10 +4,21 @@ import * as React from "react";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
 import { getAudioCtx, playPianoNote } from "@/lib/drums";
-import { useDAWStore } from "@/lib/store";
+import { type PianoNote, useDAWStore } from "@/lib/store";
 
 const NOTES_DESC = [
-	"B", "A#", "A", "G#", "G", "F#", "F", "E", "D#", "D", "C#", "C",
+	"B",
+	"A#",
+	"A",
+	"G#",
+	"G",
+	"F#",
+	"F",
+	"E",
+	"D#",
+	"D",
+	"C#",
+	"C",
 ] as const;
 const BLACK = new Set(["A#", "G#", "F#", "D#", "C#"]);
 const OCTAVES = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1];
@@ -21,6 +32,7 @@ const BEAT_W = 32;
 const SUB_W = BEAT_W / SUBS;
 const TOTAL_SUBS = BARS * BPB * SUBS;
 const TOTAL_W = BARS * BPB * BEAT_W;
+const SNAP = 4;
 const NOTE_LEN = 8;
 const STEM_MAX_H = 34;
 const DEFAULT_VEL = 100;
@@ -62,14 +74,36 @@ const VelocityHandle = React.memo(function VelocityHandle({
 			onPointerMove={(e) => {
 				if (!startRef.current) return;
 				const dy = startRef.current.y - e.clientY;
-				const newVel = Math.max(0, Math.min(127, Math.round(startRef.current.vel + (dy / STEM_MAX_H) * 127)));
+				const newVel = Math.max(
+					0,
+					Math.min(
+						127,
+						Math.round(startRef.current.vel + (dy / STEM_MAX_H) * 127),
+					),
+				);
 				onVelocityChange(sub, newVel);
 			}}
-			onPointerUp={() => { startRef.current = null; }}
+			onPointerUp={() => {
+				startRef.current = null;
+			}}
 		>
-			<div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: color, flexShrink: 0 }} />
+			<div
+				style={{
+					width: 6,
+					height: 6,
+					borderRadius: "50%",
+					backgroundColor: color,
+					flexShrink: 0,
+				}}
+			/>
 			{stemH > 0 && (
-				<div style={{ width: 2, height: stemH, backgroundColor: `color-mix(in srgb, ${color} 70%, transparent)` }} />
+				<div
+					style={{
+						width: 2,
+						height: stemH,
+						backgroundColor: `color-mix(in srgb, ${color} 70%, transparent)`,
+					}}
+				/>
 			)}
 		</div>
 	);
@@ -77,22 +111,6 @@ const VelocityHandle = React.memo(function VelocityHandle({
 
 function getNoteName(ri: number): string {
 	return `${NOTES_DESC[ri % 12]}${OCTAVES[Math.floor(ri / 12)]}`;
-}
-
-function groupRuns(trackNotes: Record<string, boolean>, ri: number) {
-	const subs = Object.keys(trackNotes)
-		.filter((k) => k.startsWith(`${ri}-`))
-		.map((k) => parseInt(k.split("-")[1]))
-		.sort((a, b) => a - b);
-	const runs: { start: number; end: number }[] = [];
-	for (const sub of subs) {
-		if (runs.length > 0 && runs[runs.length - 1].end >= sub - 1) {
-			runs[runs.length - 1].end = sub;
-		} else {
-			runs.push({ start: sub, end: sub });
-		}
-	}
-	return runs;
 }
 
 function gridBg(): string {
@@ -106,7 +124,9 @@ function gridBg(): string {
 			: isBeat
 				? "rgba(255,255,255,0.07)"
 				: "rgba(255,255,255,0.025)";
-		lines.push(`linear-gradient(${color},${color}) ${x}px 0 / 1px 100% no-repeat`);
+		lines.push(
+			`linear-gradient(${color},${color}) ${x}px 0 / 1px 100% no-repeat`,
+		);
 	}
 	return lines.join(",");
 }
@@ -205,23 +225,22 @@ const GridRow = React.memo(function GridRow({
 	ri,
 	note,
 	trackNotes,
+	trackVelocities,
 	color,
-	onRowClick,
 }: {
 	ri: number;
 	note: string;
-	trackNotes: Record<string, boolean>;
+	trackNotes: PianoNote[];
+	trackVelocities: Record<number, number>;
 	color: string;
-	onRowClick: (ri: number, e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
 	const isBlack = BLACK.has(note);
 	const isC = note === "C";
-	const runs = groupRuns(trackNotes, ri);
 	const noteName = getNoteName(ri);
+	const rowNotes = trackNotes.filter((n) => n.row === ri);
 
 	return (
 		<div
-			onClick={(e) => onRowClick(ri, e)}
 			style={{
 				position: "relative",
 				height: ROW_H,
@@ -234,18 +253,19 @@ const GridRow = React.memo(function GridRow({
 						: "rgba(255,255,255,0.018)",
 				borderBottom: `1px solid ${isBlack ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.035)"}`,
 				backgroundImage: GRID_BG,
-				cursor: "crosshair",
 				boxSizing: "border-box",
 			}}
 		>
-			{runs.map(({ start, end }) => {
-				const w = (end - start + 1) * SUB_W;
+			{rowNotes.map((n, i) => {
+				const w = n.duration * SUB_W;
+				const vel = trackVelocities[n.start] ?? DEFAULT_VEL;
+				const opacity = vel / 127;
 				return (
 					<div
-						key={start}
+						key={i}
 						style={{
 							position: "absolute",
-							left: start * SUB_W + 1,
+							left: n.start * SUB_W + 1,
 							top: 1,
 							width: w - 2,
 							height: ROW_H - 3,
@@ -257,6 +277,7 @@ const GridRow = React.memo(function GridRow({
 							paddingLeft: 3,
 							pointerEvents: "none",
 							boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.25)`,
+							opacity,
 						}}
 					>
 						{w >= 18 && (
@@ -286,7 +307,9 @@ export function PianoRoll() {
 		activeTrack,
 		tracks,
 		pianoNotes,
-		placeNote,
+		addNote,
+		removeNote,
+		resizeNote,
 		noteVelocities,
 		setNoteVelocity,
 		isPlaying,
@@ -296,17 +319,20 @@ export function PianoRoll() {
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
 	const color = vars[TRACK_PALETTE[activeTrack % TRACK_PALETTE.length]];
-	const trackNotes = pianoNotes[activeTrack] ?? {};
+	const trackNotes = pianoNotes[activeTrack] ?? [];
 	const trackVelocities = noteVelocities[activeTrack] ?? {};
 
 	const rows = React.useMemo(
-		() => OCTAVES.flatMap((oct) => NOTES_DESC.map((note) => ({ note, octave: oct }))),
+		() =>
+			OCTAVES.flatMap((oct) =>
+				NOTES_DESC.map((note) => ({ note, octave: oct })),
+			),
 		[],
 	);
 
 	const activeRows = React.useMemo(() => {
 		const set = new Set<number>();
-		Object.keys(trackNotes).forEach((k) => set.add(parseInt(k.split("-")[0])));
+		trackNotes.forEach((n) => set.add(n.row));
 		return set;
 	}, [trackNotes]);
 
@@ -321,10 +347,9 @@ export function PianoRoll() {
 	React.useLayoutEffect(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
-		const keys = Object.keys(trackNotes);
 		let targetRow: number;
-		if (keys.length > 0) {
-			const rowNums = keys.map((k) => parseInt(k.split("-")[0]));
+		if (trackNotes.length > 0) {
+			const rowNums = trackNotes.map((n) => n.row);
 			targetRow = Math.floor((Math.min(...rowNums) + Math.max(...rowNums)) / 2);
 		} else {
 			targetRow = 48;
@@ -358,23 +383,68 @@ export function PianoRoll() {
 		[activeTrack, setNoteVelocity],
 	);
 
-	const handleRowClick = React.useCallback(
-		(ri: number, e: React.MouseEvent<HTMLDivElement>) => {
+	const dragRef = React.useRef<{
+		noteIndex: number;
+		originalStart: number;
+	} | null>(null);
+
+	const handleGridPointerDown = React.useCallback(
+		(e: React.PointerEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			e.currentTarget.setPointerCapture(e.pointerId);
 			const rect = e.currentTarget.getBoundingClientRect();
 			const x = e.clientX - rect.left;
+			const y = e.clientY - rect.top;
+			const ri = Math.floor(y / ROW_H);
 			const ci = Math.floor(x / SUB_W);
-			const snapSub = Math.floor(ci / NOTE_LEN) * NOTE_LEN;
-			if (snapSub >= 0 && snapSub < TOTAL_SUBS) {
-				const hasNote = !!trackNotes[`${ri}-${snapSub}`];
-				placeNote(activeTrack, ri, snapSub, NOTE_LEN, !hasNote);
-				if (!hasNote) {
-					const ac = getAudioCtx();
-					playPianoNote(ri, ac.currentTime);
-				}
+			const startSub = Math.floor(ci / SNAP) * SNAP;
+			if (ri < 0 || ri >= rows.length || startSub < 0 || startSub >= TOTAL_SUBS)
+				return;
+
+			const existingIdx = trackNotes.findIndex(
+				(n) =>
+					n.row === ri &&
+					startSub >= n.start &&
+					startSub < n.start + n.duration,
+			);
+
+			if (existingIdx >= 0) {
+				removeNote(activeTrack, existingIdx);
+				dragRef.current = null;
+			} else {
+				const newIndex = trackNotes.length;
+				addNote(activeTrack, { row: ri, start: startSub, duration: NOTE_LEN });
+				const ac = getAudioCtx();
+				playPianoNote(ri, ac.currentTime);
+				dragRef.current = { noteIndex: newIndex, originalStart: startSub };
 			}
 		},
-		[activeTrack, trackNotes, placeNote],
+		[activeTrack, trackNotes, addNote, removeNote, rows.length],
 	);
+
+	const handleGridPointerMove = React.useCallback(
+		(e: React.PointerEvent<HTMLDivElement>) => {
+			const drag = dragRef.current;
+			if (!drag) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const x = e.clientX - rect.left;
+			const ci = Math.min(
+				TOTAL_SUBS - 1,
+				Math.max(drag.originalStart, Math.floor(x / SUB_W)),
+			);
+			const rawDuration = ci - drag.originalStart + 1;
+			const snappedDuration = Math.max(
+				SNAP,
+				Math.ceil(rawDuration / SNAP) * SNAP,
+			);
+			resizeNote(activeTrack, drag.noteIndex, snappedDuration);
+		},
+		[activeTrack, resizeNote],
+	);
+
+	const handleGridPointerUp = React.useCallback(() => {
+		dragRef.current = null;
+	}, []);
 
 	return (
 		<div
@@ -390,7 +460,11 @@ export function PianoRoll() {
 				</span>
 			</div>
 
-			<div className="scrollbar-none flex-1 overflow-auto" ref={scrollContainerRef} style={{ position: "relative" }}>
+			<div
+				className="scrollbar-none flex-1 overflow-auto"
+				ref={scrollContainerRef}
+				style={{ position: "relative" }}
+			>
 				<div style={{ width: KEY_W + TOTAL_W, minHeight: "100%" }}>
 					<div
 						style={{
@@ -403,7 +477,13 @@ export function PianoRoll() {
 							borderBottom: "1px solid rgba(255,255,255,0.08)",
 						}}
 					>
-						<div style={{ width: KEY_W, minWidth: KEY_W, borderRight: "1px solid rgba(255,255,255,0.08)" }} />
+						<div
+							style={{
+								width: KEY_W,
+								minWidth: KEY_W,
+								borderRight: "1px solid rgba(255,255,255,0.08)",
+							}}
+						/>
 						{Array.from({ length: BARS * BPB }).map((_, i) => {
 							const bar = Math.floor(i / BPB);
 							const beat = i % BPB;
@@ -426,7 +506,9 @@ export function PianoRoll() {
 											fontSize: 9,
 											lineHeight: 1,
 											userSelect: "none",
-											color: major ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.2)",
+											color: major
+												? "rgba(255,255,255,0.55)"
+												: "rgba(255,255,255,0.2)",
 										}}
 									>
 										{major ? bar + 1 : `${bar + 1}.${beat + 1}`}
@@ -436,7 +518,9 @@ export function PianoRoll() {
 						})}
 					</div>
 
-					<div style={{ position: "relative", height: totalH, display: "flex" }}>
+					<div
+						style={{ position: "relative", height: totalH, display: "flex" }}
+					>
 						<div
 							style={{
 								position: "sticky",
@@ -460,15 +544,25 @@ export function PianoRoll() {
 							))}
 						</div>
 
-						<div style={{ position: "relative", width: TOTAL_W, flexShrink: 0 }}>
+						<div
+							style={{
+								position: "relative",
+								width: TOTAL_W,
+								flexShrink: 0,
+								cursor: "crosshair",
+							}}
+							onPointerDown={handleGridPointerDown}
+							onPointerMove={handleGridPointerMove}
+							onPointerUp={handleGridPointerUp}
+						>
 							{rows.map(({ note }, ri) => (
 								<GridRow
 									key={ri}
 									ri={ri}
 									note={note}
 									trackNotes={trackNotes}
+									trackVelocities={trackVelocities}
 									color={color}
-									onRowClick={handleRowClick}
 								/>
 							))}
 
@@ -478,7 +572,10 @@ export function PianoRoll() {
 								style={{ willChange: "transform" }}
 							>
 								<div className="h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-white" />
-								<div className="w-px flex-1" style={{ borderLeft: "1px solid rgba(255,255,255,0.7)" }} />
+								<div
+									className="w-px flex-1"
+									style={{ borderLeft: "1px solid rgba(255,255,255,0.7)" }}
+								/>
 							</div>
 						</div>
 					</div>
@@ -505,19 +602,17 @@ export function PianoRoll() {
 						borderLeft: "1px solid rgba(255,255,255,0.08)",
 					}}
 				>
-					{[...new Set(
-						Object.keys(trackNotes)
-							.filter((k) => parseInt(k.split("-")[1]) % NOTE_LEN === 0)
-							.map((k) => parseInt(k.split("-")[1]))
-					)].map((sub) => (
-						<VelocityHandle
-							key={sub}
-							sub={sub}
-							color={color}
-							velocity={trackVelocities[sub] ?? DEFAULT_VEL}
-							onVelocityChange={handleVelocityChange}
-						/>
-					))}
+					{[...new Map(trackNotes.map((n) => [n.start, n])).values()].map(
+						(n) => (
+							<VelocityHandle
+								key={n.start}
+								sub={n.start}
+								color={color}
+								velocity={trackVelocities[n.start] ?? DEFAULT_VEL}
+								onVelocityChange={handleVelocityChange}
+							/>
+						),
+					)}
 				</div>
 			</div>
 		</div>

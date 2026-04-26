@@ -582,7 +582,12 @@ export function TracksView({
 							</div>
 						</div>
 						<div className="flex items-center py-1.5 pr-2">
-							<VUMeter active={isPlaying} height={44} volume={masterVolume} getAnalyser={getMasterAnalyser} />
+							<VUMeter
+								active={isPlaying}
+								height={44}
+								volume={masterVolume}
+								getAnalyser={getMasterAnalyser}
+							/>
 						</div>
 					</div>
 				</div>

@@ -176,7 +176,13 @@ export function rowToFreq(row: number): number {
 	return 440 * 2 ** ((midi - 69) / 12);
 }
 
-export function playPianoNote(row: number, time: number, duration = 0.3, dest?: AudioNode) {
+export function playPianoNote(
+	row: number,
+	time: number,
+	duration = 0.3,
+	dest?: AudioNode,
+	gainScale = 1.0,
+) {
 	const ac = getAudioCtx();
 	const freq = rowToFreq(row);
 
@@ -186,13 +192,16 @@ export function playPianoNote(row: number, time: number, duration = 0.3, dest?: 
 	osc.frequency.value = freq;
 	osc.connect(gain);
 	gain.connect(dest ?? getMasterDest());
-	gain.gain.setValueAtTime(0.4, time);
+	gain.gain.setValueAtTime(0.4 * gainScale, time);
 	gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 	osc.start(time);
 	osc.stop(time + duration);
 }
 
-export const DRUM_PLAYERS: Record<string, (time: number, dest?: AudioNode) => void> = {
+export const DRUM_PLAYERS: Record<
+	string,
+	(time: number, dest?: AudioNode) => void
+> = {
 	Kick: playKick,
 	Snare: playSnare,
 	"Closed Hat": playClosedHihat,
