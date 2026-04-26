@@ -22,6 +22,7 @@ import * as React from "react";
 import { LiaDrumSolid } from "react-icons/lia";
 import { getAudioCtx } from "@/lib/audio";
 import {
+	playClap,
 	playClosedHihat,
 	playKick,
 	playPercussion,
@@ -34,7 +35,7 @@ const SOUND_PREVIEWS: Record<string, (time: number) => void> = {
 	"808 Kick": playKick,
 	"Snare Crack": playSnare,
 	"Hi-Hat": playClosedHihat,
-	Clap: playSnare,
+	Clap: playClap,
 	Perc: playPercussion,
 };
 

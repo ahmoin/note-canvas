@@ -5,6 +5,7 @@ import { ChannelRack } from "@/components/channel-rack";
 // import { Mixer } from "@/components/mixer";
 import { PatternList } from "@/components/pattern-list";
 import { PianoRoll } from "@/components/piano-roll";
+import { SoundView } from "@/components/sound-view";
 // import { Playlist } from "@/components/playlist";
 import { ThemeSelector } from "@/components/theme-selector";
 import { TracksView } from "@/components/tracks-view";
@@ -56,7 +57,13 @@ export default function Page() {
 					{/* {activeView === "playlist" && <Playlist />} */}
 				</div>
 			</div>
-			{activeSubtype === "wave" ? <PianoRoll /> : <ChannelRack />}
+			{activeSubtype === "wave" ? (
+				<PianoRoll />
+			) : activeSubtype === "sound" ? (
+				<SoundView />
+			) : (
+				<ChannelRack />
+			)}
 			<ThemeSelector />
 		</div>
 	);

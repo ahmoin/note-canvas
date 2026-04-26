@@ -1,6 +1,6 @@
 # Note Canvas
 
-A website DAW for composing and playing back music. Supports drum sequencing and melodic instruments with a piano roll editor, all running directly in your browser with no installs required.
+A DAW website for composing and playing back music. Supports drum sequencing and melodic instruments with a piano roll editor, all running directly in your browser with no installs required.
 
 ## Features
 

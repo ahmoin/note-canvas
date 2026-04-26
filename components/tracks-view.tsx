@@ -28,17 +28,113 @@ const BAR_PX = BEAT_PX * 4;
 const TOTAL_BARS = 16;
 const TOTAL_SUBS = 256;
 
+function WaveformCanvas({
+	getAnalyser,
+	color,
+}: {
+	getAnalyser: () => AnalyserNode | null;
+	color: string;
+}) {
+	const canvasRef = React.useRef<HTMLCanvasElement>(null);
+	const rafRef = React.useRef<number | null>(null);
+	const dataRef = React.useRef<Float32Array<ArrayBuffer> | null>(null);
+
+	React.useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ro = new ResizeObserver(() => {
+			canvas.width = canvas.offsetWidth * devicePixelRatio;
+			canvas.height = canvas.offsetHeight * devicePixelRatio;
+		});
+		ro.observe(canvas);
+		return () => ro.disconnect();
+	}, []);
+
+	React.useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const draw = () => {
+			const analyser = getAnalyser();
+			const w = canvas.width || canvas.offsetWidth;
+			const h = canvas.height || canvas.offsetHeight;
+			ctx.clearRect(0, 0, w, h);
+
+			if (analyser) {
+				if (!dataRef.current || dataRef.current.length !== analyser.fftSize) {
+					dataRef.current = new Float32Array(
+						new ArrayBuffer(analyser.fftSize * 4),
+					);
+				}
+				analyser.getFloatTimeDomainData(dataRef.current);
+				const data = dataRef.current;
+				const step = Math.max(1, Math.floor(data.length / w));
+
+				ctx.beginPath();
+				ctx.lineWidth = 1.5;
+				ctx.strokeStyle = color;
+				ctx.shadowColor = color;
+				ctx.shadowBlur = 6;
+				for (let x = 0; x < w; x++) {
+					let sum = 0;
+					for (let j = 0; j < step; j++) sum += data[x * step + j] ?? 0;
+					const y = ((1 - sum / step) / 2) * h;
+					if (x === 0) ctx.moveTo(x, y);
+					else ctx.lineTo(x, y);
+				}
+				ctx.stroke();
+			} else {
+				ctx.beginPath();
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = `color-mix(in srgb, ${color} 40%, transparent)`;
+				ctx.moveTo(0, h / 2);
+				ctx.lineTo(w, h / 2);
+				ctx.stroke();
+			}
+
+			rafRef.current = requestAnimationFrame(draw);
+		};
+
+		rafRef.current = requestAnimationFrame(draw);
+		return () => {
+			if (rafRef.current) cancelAnimationFrame(rafRef.current);
+		};
+	}, [getAnalyser, color]);
+
+	return (
+		<canvas
+			ref={canvasRef}
+			style={{ width: "100%", height: "100%", display: "block" }}
+		/>
+	);
+}
+
 function ClipPreview({
 	pattern,
 	red,
 	subtype,
 	pianoNotes,
+	trackIndex,
+	isPlaying,
 }: {
 	pattern: Pattern;
 	red: string;
 	subtype: TrackSubtype;
 	pianoNotes: PianoNote[];
+	trackIndex: number;
+	isPlaying: boolean;
 }) {
+	if (subtype === "sound") {
+		return (
+			<WaveformCanvas
+				getAnalyser={() => getTrackAnalyser(trackIndex)}
+				color={red}
+			/>
+		);
+	}
+
 	if (subtype === "wave") {
 		if (pianoNotes.length === 0) {
 			return (
@@ -52,23 +148,18 @@ function ClipPreview({
 		const rowSpan = Math.max(maxRow - minRow + 1, 1);
 		return (
 			<div className="relative h-full w-full overflow-hidden px-1 py-1">
-				{pianoNotes.map((n, i) => {
-					const top = ((n.row - minRow) / rowSpan) * 100;
-					const left = (n.start / TOTAL_SUBS) * 100;
-					const width = Math.max(1, (n.duration / TOTAL_SUBS) * 100);
-					return (
-						<div
-							key={i}
-							className="absolute h-[2px] rounded-[1px]"
-							style={{
-								top: `${top}%`,
-								left: `${left}%`,
-								width: `${width}%`,
-								backgroundColor: `color-mix(in srgb, ${red} 85%, transparent)`,
-							}}
-						/>
-					);
-				})}
+				{pianoNotes.map((n, i) => (
+					<div
+						key={i}
+						className="absolute h-[2px] rounded-[1px]"
+						style={{
+							top: `${((n.row - minRow) / rowSpan) * 100}%`,
+							left: `${(n.start / TOTAL_SUBS) * 100}%`,
+							width: `${Math.max(1, (n.duration / TOTAL_SUBS) * 100)}%`,
+							backgroundColor: `color-mix(in srgb, ${red} 85%, transparent)`,
+						}}
+					/>
+				))}
 			</div>
 		);
 	}
@@ -751,6 +842,8 @@ export function TracksView({
 											red={color}
 											subtype={tracks[ti].subtype}
 											pianoNotes={pianoNotes[ti] ?? []}
+											trackIndex={ti}
+											isPlaying={isPlaying}
 										/>
 									</div>
 									<span
