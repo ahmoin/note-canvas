@@ -21,6 +21,9 @@ export function usePlayback() {
 		trackVolumes,
 		patternLengthBars,
 		trackLoop,
+		channelVolumes,
+		channelPans,
+		channelMuted,
 		setCurrentTick,
 		setPlayStartAudioTime,
 	} = useDAWStore();
@@ -41,6 +44,12 @@ export function usePlayback() {
 	patternLengthBarsRef.current = patternLengthBars;
 	const trackLoopRef = React.useRef(trackLoop);
 	trackLoopRef.current = trackLoop;
+	const channelVolumesRef = React.useRef(channelVolumes);
+	channelVolumesRef.current = channelVolumes;
+	const channelPansRef = React.useRef(channelPans);
+	channelPansRef.current = channelPans;
+	const channelMutedRef = React.useRef(channelMuted);
+	channelMutedRef.current = channelMuted;
 
 	const startRef = React.useRef<{
 		audioTime: number;
@@ -85,7 +94,7 @@ export function usePlayback() {
 					const subtype = tracksRef.current[ti]?.subtype;
 					const lengthBars = patternLengthBarsRef.current[ti] ?? 16;
 					const loopEnabled = trackLoopRef.current[ti] ?? true;
-					// 16 subs per visual bar (PIANO_STEPS=256 / BARS=16)
+
 					const pianoSubs = lengthBars * 16;
 					if (!loopEnabled && step >= pianoSubs) return;
 					const pianoStep = step % pianoSubs;
@@ -105,7 +114,24 @@ export function usePlayback() {
 						}
 					} else if (isDrumTick) {
 						for (const ch of CHANNELS) {
-							if (pat[ch]?.[drumStep]) DRUM_PLAYERS[ch]?.(time, dest);
+							if (!pat[ch]?.[drumStep]) continue;
+							if (channelMutedRef.current[ti]?.[ch]) continue;
+							const chanVol = (channelVolumesRef.current[ti]?.[ch] ?? 82.5) / 100;
+							const chanPan = (channelPansRef.current[ti]?.[ch] ?? 0) / 50;
+							let node: AudioNode = dest;
+							if (chanPan !== 0) {
+								const panner = ac.createStereoPanner();
+								panner.pan.value = Math.max(-1, Math.min(1, chanPan));
+								panner.connect(node);
+								node = panner;
+							}
+							if (chanVol !== 1) {
+								const gain = ac.createGain();
+								gain.gain.value = chanVol;
+								gain.connect(node);
+								node = gain;
+							}
+							DRUM_PLAYERS[ch]?.(time, node);
 						}
 					}
 				});

@@ -103,6 +103,12 @@ interface DAWState {
 	masterPan: number;
 	setMasterVolume: (vol: number) => void;
 	setMasterPan: (pan: number) => void;
+	channelVolumes: Record<number, Record<string, number>>;
+	channelPans: Record<number, Record<string, number>>;
+	channelMuted: Record<number, Record<string, boolean>>;
+	setChannelVolume: (trackIndex: number, channel: string, vol: number) => void;
+	setChannelPan: (trackIndex: number, channel: string, pan: number) => void;
+	toggleChannelMute: (trackIndex: number, channel: string) => void;
 }
 
 export const useDAWStore = create<DAWState>((set) => ({
@@ -123,6 +129,9 @@ export const useDAWStore = create<DAWState>((set) => ({
 	trackLoop: Array(DEFAULT_TRACKS.length).fill(true),
 	masterVolume: 82.5,
 	masterPan: 0,
+	channelVolumes: {},
+	channelPans: {},
+	channelMuted: {},
 	setActiveView: (view) => set({ activeView: view }),
 	togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
 	setBpm: (bpm) => set({ bpm }),
@@ -228,6 +237,30 @@ export const useDAWStore = create<DAWState>((set) => ({
 		}),
 	setMasterVolume: (vol) => set({ masterVolume: vol }),
 	setMasterPan: (pan) => set({ masterPan: pan }),
+	setChannelVolume: (trackIndex, channel, vol) =>
+		set((s) => ({
+			channelVolumes: {
+				...s.channelVolumes,
+				[trackIndex]: { ...(s.channelVolumes[trackIndex] ?? {}), [channel]: vol },
+			},
+		})),
+	setChannelPan: (trackIndex, channel, pan) =>
+		set((s) => ({
+			channelPans: {
+				...s.channelPans,
+				[trackIndex]: { ...(s.channelPans[trackIndex] ?? {}), [channel]: pan },
+			},
+		})),
+	toggleChannelMute: (trackIndex, channel) =>
+		set((s) => ({
+			channelMuted: {
+				...s.channelMuted,
+				[trackIndex]: {
+					...(s.channelMuted[trackIndex] ?? {}),
+					[channel]: !(s.channelMuted[trackIndex]?.[channel] ?? false),
+				},
+			},
+		})),
 	addTrack: (name, type, subtype = "sound") =>
 		set((s) => ({
 			tracks: [...s.tracks, { name, type, subtype }],

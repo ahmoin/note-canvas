@@ -11,6 +11,95 @@ import { cn } from "@/lib/utils";
 
 const STEP_PX = 25;
 
+const CH_KNOB_SIZE = 20;
+const CH_KNOB_R = 7;
+const CH_KNOB_CX = CH_KNOB_SIZE / 2;
+const CH_KNOB_CY = CH_KNOB_SIZE / 2;
+
+function chKnobXY(deg: number) {
+	return {
+		x: CH_KNOB_CX + CH_KNOB_R * Math.sin((deg * Math.PI) / 180),
+		y: CH_KNOB_CY - CH_KNOB_R * Math.cos((deg * Math.PI) / 180),
+	};
+}
+
+function ChannelKnob({
+	label,
+	value,
+	min = 0,
+	max = 100,
+	onChange,
+	color,
+}: {
+	label: string;
+	value: number;
+	min?: number;
+	max?: number;
+	onChange: (v: number) => void;
+	color: string;
+}) {
+	const dragRef = React.useRef<{ y: number; value: number } | null>(null);
+	const ratio = (value - min) / (max - min);
+	const angle = -135 + ratio * 270;
+	const span = angle + 135;
+	const startPt = chKnobXY(-135);
+	const bgEndPt = chKnobXY(135);
+	const valEndPt = chKnobXY(angle);
+	const fmt = (n: number) => n.toFixed(2);
+	const bgPath = `M ${fmt(startPt.x)} ${fmt(startPt.y)} A ${CH_KNOB_R} ${CH_KNOB_R} 0 1 1 ${fmt(bgEndPt.x)} ${fmt(bgEndPt.y)}`;
+	const valPath =
+		ratio > 0.002
+			? `M ${fmt(startPt.x)} ${fmt(startPt.y)} A ${CH_KNOB_R} ${CH_KNOB_R} 0 ${span > 180 ? 1 : 0} 1 ${fmt(valEndPt.x)} ${fmt(valEndPt.y)}`
+			: null;
+	const displayValue =
+		label === "PAN"
+			? value === 0
+				? "C"
+				: value > 0
+					? `R${Math.round(value)}`
+					: `L${Math.round(-value)}`
+			: `${Math.round(value)}`;
+	const onMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
+		dragRef.current = { y: e.clientY, value };
+		const onMouseMove = (mv: MouseEvent) => {
+			if (!dragRef.current) return;
+			const delta = (dragRef.current.y - mv.clientY) / 100;
+			onChange(Math.max(min, Math.min(max, dragRef.current.value + delta * (max - min))));
+		};
+		const onMouseUp = () => {
+			dragRef.current = null;
+			window.removeEventListener("mousemove", onMouseMove);
+			window.removeEventListener("mouseup", onMouseUp);
+		};
+		window.addEventListener("mousemove", onMouseMove);
+		window.addEventListener("mouseup", onMouseUp);
+	};
+	return (
+		<div
+			className="group relative cursor-ns-resize select-none"
+			style={{ width: CH_KNOB_SIZE, height: CH_KNOB_SIZE }}
+			onMouseDown={onMouseDown}
+			title={`${label}: ${displayValue}`}
+		>
+			<svg width={CH_KNOB_SIZE} height={CH_KNOB_SIZE} className="absolute inset-0">
+				<title>{label}</title>
+				<path d={bgPath} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" strokeLinecap="round" />
+				{valPath && (
+					<path d={valPath} fill="none" style={{ stroke: `color-mix(in srgb, ${color} 65%, transparent)` }} strokeWidth="1.5" strokeLinecap="round" />
+				)}
+			</svg>
+			<div className="absolute inset-[3px] rounded-full bg-gradient-to-b from-[#2e1111] to-[#150808] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)] ring-1 ring-black/70" />
+			<div
+				className="absolute inset-[3px] flex items-start justify-center pt-[2px]"
+				style={{ transform: `rotate(${angle}deg)` }}
+			>
+				<div className="h-[5px] w-[1.5px] rounded-full" style={{ backgroundColor: `color-mix(in srgb, ${color} 90%, white)` }} />
+			</div>
+		</div>
+	);
+}
+
 const PATTERN_LENGTH_OPTIONS = [2, 4, 8, 16] as const;
 
 const StepButton = React.memo(function StepButton({
@@ -83,6 +172,12 @@ export function ChannelRack() {
 		trackLoop,
 		setPatternLength,
 		setTrackLoop,
+		channelVolumes,
+		channelPans,
+		channelMuted,
+		setChannelVolume,
+		setChannelPan,
+		toggleChannelMute,
 	} = useDAWStore();
 
 	const activeLengthBars = patternLengthBars[activeTrack] ?? 16;
@@ -216,16 +311,48 @@ export function ChannelRack() {
 			<div className="flex flex-1 overflow-hidden">
 				<div className="flex w-36 shrink-0 flex-col border-r">
 					<div className="h-5 shrink-0 border-b" />
-					{CHANNELS.map((ch) => (
-						<div
-							key={ch}
-							className="flex h-[39px] shrink-0 items-center border-b px-3 last:border-0"
-						>
-							<span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-								{ch}
-							</span>
-						</div>
-					))}
+					{CHANNELS.map((ch) => {
+						const vol = channelVolumes[activeTrack]?.[ch] ?? 82.5;
+						const pan = channelPans[activeTrack]?.[ch] ?? 0;
+						const muted = channelMuted[activeTrack]?.[ch] ?? false;
+						return (
+							<div
+								key={ch}
+								className="flex h-[39px] shrink-0 flex-col justify-between border-b px-2 py-1 last:border-0"
+							>
+								<span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+									{ch}
+								</span>
+								<div className="flex items-center gap-1.5">
+									<ChannelKnob
+										label="PAN"
+										value={pan}
+										min={-50}
+										max={50}
+										onChange={(v) => setChannelPan(activeTrack, ch, v)}
+										color={trackColor}
+									/>
+									<ChannelKnob
+										label="VOL"
+										value={vol}
+										onChange={(v) => setChannelVolume(activeTrack, ch, v)}
+										color={trackColor}
+									/>
+									<button
+										type="button"
+										onClick={() => toggleChannelMute(activeTrack, ch)}
+										title={muted ? "Unmute" : "Mute"}
+										className={cn(
+											"size-2 rounded-full transition-colors",
+											muted
+												? "bg-white/20"
+												: "bg-green-400 shadow-[0_0_4px_#4ade80]",
+										)}
+									/>
+								</div>
+							</div>
+						);
+					})}
 				</div>
 
 				<div className="flex-1 overflow-x-auto overflow-y-hidden">
