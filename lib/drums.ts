@@ -1,3 +1,5 @@
+import { rowToFreq } from "@/lib/music";
+
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let masterAnalyser: AnalyserNode | null = null;
@@ -164,16 +166,6 @@ export function playRide(time: number, dest?: AudioNode) {
 	gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
 	src.start(time);
 	src.stop(time + 0.6);
-}
-
-const OCTAVES_LIST = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1];
-const NOTE_SEMITONES = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-
-export function rowToFreq(row: number): number {
-	const oct = OCTAVES_LIST[Math.floor(row / 12)] ?? 0;
-	const semitone = NOTE_SEMITONES[row % 12] ?? 0;
-	const midi = (oct + 1) * 12 + semitone;
-	return 440 * 2 ** ((midi - 69) / 12);
 }
 
 export function playPianoNote(

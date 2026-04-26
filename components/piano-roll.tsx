@@ -4,25 +4,10 @@ import * as React from "react";
 import { useFlavor } from "@/hooks/use-flavor";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
 import { getAudioCtx, playPianoNote } from "@/lib/drums";
+import { getNoteName, NOTES_DESC, OCTAVES } from "@/lib/music";
 import { type PianoNote, useDAWStore } from "@/lib/store";
-import { gridBg } from "@/lib/utils";
 
-const NOTES_DESC = [
-	"B",
-	"A#",
-	"A",
-	"G#",
-	"G",
-	"F#",
-	"F",
-	"E",
-	"D#",
-	"D",
-	"C#",
-	"C",
-] as const;
 const BLACK = new Set(["A#", "G#", "F#", "D#", "C#"]);
-const OCTAVES = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1];
 
 const ROW_H = 14;
 const KEY_W = 34;
@@ -38,7 +23,25 @@ const NOTE_LEN = 8;
 const STEM_MAX_H = 34;
 const DEFAULT_VEL = 100;
 
-const GRID_BG = gridBg(TOTAL_SUBS, SUB_W, SUBS, BPB);
+function gridBg(): string {
+	const lines: string[] = [];
+	for (let ci = 0; ci < TOTAL_SUBS; ci++) {
+		const x = ci * SUB_W;
+		const isBar = ci % (SUBS * BPB) === 0;
+		const isBeat = ci % SUBS === 0;
+		const color = isBar
+			? "rgba(255,255,255,0.18)"
+			: isBeat
+				? "rgba(255,255,255,0.07)"
+				: "rgba(255,255,255,0.025)";
+		lines.push(
+			`linear-gradient(${color},${color}) ${x}px 0 / 1px 100% no-repeat`,
+		);
+	}
+	return lines.join(",");
+}
+
+const GRID_BG = gridBg();
 
 const VelocityHandle = React.memo(function VelocityHandle({
 	sub,
@@ -112,10 +115,6 @@ const VelocityHandle = React.memo(function VelocityHandle({
 		</div>
 	);
 });
-
-function getNoteName(ri: number): string {
-	return `${NOTES_DESC[ri % 12]}${OCTAVES[Math.floor(ri / 12)]}`;
-}
 
 function PianoKey({
 	note,
