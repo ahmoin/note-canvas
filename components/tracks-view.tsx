@@ -15,6 +15,7 @@ import { getAudioCtx, getMasterAnalyser, getTrackAnalyser } from "@/lib/drums";
 import {
 	CHANNELS,
 	type Pattern,
+	type PianoNote,
 	STEPS,
 	type TrackSubtype,
 	useDAWStore,
@@ -35,36 +36,33 @@ function ClipPreview({
 	pattern: Pattern;
 	red: string;
 	subtype: TrackSubtype;
-	pianoNotes: Record<string, boolean>;
+	pianoNotes: PianoNote[];
 }) {
 	if (subtype === "wave") {
-		const noteKeys = Object.keys(pianoNotes);
-		if (noteKeys.length === 0) {
+		if (pianoNotes.length === 0) {
 			return (
 				<div className="flex h-full w-full items-center justify-center">
 					<span className="text-[8px] text-white/20">no notes</span>
 				</div>
 			);
 		}
-		const rows = noteKeys.map((k) => parseInt(k.split("-")[0], 10));
-		const minRow = Math.min(...rows);
-		const maxRow = Math.max(...rows);
+		const minRow = Math.min(...pianoNotes.map((n) => n.row));
+		const maxRow = Math.max(...pianoNotes.map((n) => n.row));
 		const rowSpan = Math.max(maxRow - minRow + 1, 1);
 		return (
 			<div className="relative h-full w-full overflow-hidden px-1 py-1">
-				{noteKeys.map((k) => {
-					const r = parseInt(k.split("-")[0], 10);
-					const s = parseInt(k.split("-")[1], 10);
-					const top = ((r - minRow) / rowSpan) * 100;
-					const left = (s / TOTAL_SUBS) * 100;
+				{pianoNotes.map((n, i) => {
+					const top = ((n.row - minRow) / rowSpan) * 100;
+					const left = (n.start / TOTAL_SUBS) * 100;
+					const width = Math.max(1, (n.duration / TOTAL_SUBS) * 100);
 					return (
 						<div
-							key={k}
+							key={i}
 							className="absolute h-[2px] rounded-[1px]"
 							style={{
 								top: `${top}%`,
 								left: `${left}%`,
-								width: "3%",
+								width: `${width}%`,
 								backgroundColor: `color-mix(in srgb, ${red} 85%, transparent)`,
 							}}
 						/>
@@ -658,7 +656,7 @@ export function TracksView({
 											pattern={patterns[ti]}
 											red={color}
 											subtype={tracks[ti].subtype}
-											pianoNotes={pianoNotes[ti] ?? {}}
+											pianoNotes={pianoNotes[ti] ?? []}
 										/>
 									</div>
 									<span
