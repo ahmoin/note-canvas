@@ -4,8 +4,8 @@ import { PlusIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
+import { getAudioCtx } from "@/lib/audio";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
-import { getAudioCtx } from "@/lib/drums";
 import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 

@@ -20,13 +20,13 @@ import {
 } from "@phosphor-icons/react";
 import * as React from "react";
 import { LiaDrumSolid } from "react-icons/lia";
+import { getAudioCtx } from "@/lib/audio";
 import {
-	getAudioCtx,
 	playClosedHihat,
 	playKick,
 	playPercussion,
 	playSnare,
-} from "@/lib/drums";
+} from "@/lib/sounds";
 import { type TrackSubtype, useDAWStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 

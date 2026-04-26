@@ -10,8 +10,8 @@ import * as React from "react";
 import { ClipMenu } from "@/components/clip-menu";
 import { Button } from "@/components/ui/button";
 import { useFlavor } from "@/hooks/use-flavor";
+import { getAudioCtx, getMasterAnalyser, getTrackAnalyser } from "@/lib/audio";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
-import { getAudioCtx, getMasterAnalyser, getTrackAnalyser } from "@/lib/drums";
 import {
 	CHANNELS,
 	type Pattern,

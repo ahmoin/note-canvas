@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { useFlavor } from "@/hooks/use-flavor";
+import { getAudioCtx } from "@/lib/audio";
 import { FLAVOR_VARS, TRACK_PALETTE } from "@/lib/catppuccin";
-import { getAudioCtx, playPianoNote } from "@/lib/drums";
 import { getNoteName, NOTES_DESC, OCTAVES } from "@/lib/music";
+import { playPianoNote } from "@/lib/sounds";
 import { type PianoNote, useDAWStore } from "@/lib/store";
 
 const BLACK = new Set(["A#", "G#", "F#", "D#", "C#"]);

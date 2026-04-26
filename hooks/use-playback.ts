@@ -1,13 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-	DRUM_PLAYERS,
-	getAudioCtx,
-	getTrackDest,
-	playPianoNote,
-	setTrackGainValue,
-} from "@/lib/drums";
+import { getAudioCtx, getTrackDest, setTrackGainValue } from "@/lib/audio";
+import { DRUM_PLAYERS, playPianoNote } from "@/lib/sounds";
 import { CHANNELS, STEPS, useDAWStore } from "@/lib/store";
 
 const LOOKAHEAD = 0.1;
