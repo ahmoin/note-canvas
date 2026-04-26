@@ -304,7 +304,14 @@ export function PianoRoll() {
 		isPlaying,
 		playStartAudioTime,
 		bpm,
+		patternLengthBars,
+		trackLoop,
+		setPatternLength,
+		setTrackLoop,
 	} = useDAWStore();
+
+	const activeLengthBars = patternLengthBars[activeTrack] ?? 16;
+	const loopEnabled = trackLoop[activeTrack] ?? true;
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
 	const color = vars[TRACK_PALETTE[activeTrack % TRACK_PALETTE.length]];
@@ -503,12 +510,53 @@ export function PianoRoll() {
 			style={{ height: 286, backgroundColor: vars.base }}
 		>
 			<div
-				className="flex h-8 shrink-0 items-center border-b px-3"
+				className="flex h-8 shrink-0 items-center justify-between border-b px-3"
 				style={{ borderColor: "rgba(255,255,255,0.08)" }}
 			>
 				<span className="text-xs font-medium" style={{ color: vars.text }}>
 					Piano Roll - {tracks[activeTrack]?.name ?? "No Track"}
 				</span>
+				<div className="flex items-center gap-1">
+					{([2, 4, 8, 16] as const).map((b) => (
+						<button
+							key={b}
+							type="button"
+							onClick={() => setPatternLength(activeTrack, b)}
+							className="rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors"
+							style={{
+								backgroundColor:
+									activeLengthBars === b
+										? "rgba(255,255,255,0.15)"
+										: "transparent",
+								color:
+									activeLengthBars === b ? vars.text : "rgba(255,255,255,0.35)",
+							}}
+						>
+							{b}
+						</button>
+					))}
+					<div
+						style={{
+							width: 1,
+							height: 12,
+							backgroundColor: "rgba(255,255,255,0.1)",
+							margin: "0 4px",
+						}}
+					/>
+					<button
+						type="button"
+						onClick={() => setTrackLoop(activeTrack, !loopEnabled)}
+						className="rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors"
+						style={{
+							backgroundColor: loopEnabled
+								? "rgba(255,255,255,0.15)"
+								: "transparent",
+							color: loopEnabled ? vars.text : "rgba(255,255,255,0.35)",
+						}}
+					>
+						LOOP
+					</button>
+				</div>
 			</div>
 
 			<div
@@ -617,6 +665,27 @@ export function PianoRoll() {
 									selectedNoteIdx={selectedNoteIdx}
 								/>
 							))}
+
+							{activeLengthBars < BARS && (
+								<>
+									<div
+										className="pointer-events-none absolute top-0 bottom-0"
+										style={{
+											left: activeLengthBars * BPB * BEAT_W,
+											right: 0,
+											backgroundColor: "rgba(0,0,0,0.35)",
+										}}
+									/>
+									<div
+										className="pointer-events-none absolute top-0 bottom-0"
+										style={{
+											left: activeLengthBars * BPB * BEAT_W,
+											width: 1,
+											backgroundColor: "rgba(255,255,255,0.35)",
+										}}
+									/>
+								</>
+							)}
 
 							<div
 								ref={playheadRef}

@@ -11,12 +11,15 @@ import { cn } from "@/lib/utils";
 
 const STEP_PX = 25;
 
+const PATTERN_LENGTH_OPTIONS = [2, 4, 8, 16] as const;
+
 const StepButton = React.memo(function StepButton({
 	active,
 	beat,
 	color,
 	stepIndex,
 	channel,
+	withinLength,
 	onStepMouseDown,
 	onStepMouseEnter,
 }: {
@@ -25,6 +28,7 @@ const StepButton = React.memo(function StepButton({
 	color: string;
 	stepIndex: number;
 	channel: string;
+	withinLength: boolean;
 	onStepMouseDown: (channel: string, step: number) => void;
 	onStepMouseEnter: (channel: string, step: number) => void;
 }) {
@@ -39,6 +43,7 @@ const StepButton = React.memo(function StepButton({
 			data-step={stepIndex}
 			data-active={active ? "1" : "0"}
 			className="cursor-pointer select-none px-1"
+			style={{ opacity: withinLength ? 1 : 0.25 }}
 			onMouseDown={() => onStepMouseDown(channel, stepIndex)}
 			onMouseEnter={() => onStepMouseEnter(channel, stepIndex)}
 			onKeyDown={(e) =>
@@ -74,7 +79,15 @@ export function ChannelRack() {
 		toggleStep,
 		setStep,
 		playStartAudioTime,
+		patternLengthBars,
+		trackLoop,
+		setPatternLength,
+		setTrackLoop,
 	} = useDAWStore();
+
+	const activeLengthBars = patternLengthBars[activeTrack] ?? 16;
+	const activeSteps = activeLengthBars * 2;
+	const loopEnabled = trackLoop[activeTrack] ?? true;
 
 	const flavor = useFlavor();
 	const vars = FLAVOR_VARS[flavor];
@@ -165,9 +178,39 @@ export function ChannelRack() {
 				<span className="text-xs font-medium tracking-wide">
 					Channel Rack - {tracks[activeTrack]?.name ?? "No Track"}
 				</span>
-				<Button variant="ghost" size="icon" className="size-6">
-					<PlusIcon className="size-3" />
-				</Button>
+				<div className="flex items-center gap-1">
+					{PATTERN_LENGTH_OPTIONS.map((b) => (
+						<button
+							key={b}
+							type="button"
+							onClick={() => setPatternLength(activeTrack, b)}
+							className={cn(
+								"rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+								activeLengthBars === b
+									? "bg-white/20 text-white"
+									: "text-white/35 hover:text-white/60",
+							)}
+						>
+							{b}
+						</button>
+					))}
+					<div className="mx-1 h-3 w-px bg-white/10" />
+					<button
+						type="button"
+						onClick={() => setTrackLoop(activeTrack, !loopEnabled)}
+						className={cn(
+							"rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+							loopEnabled
+								? "bg-white/20 text-white"
+								: "text-white/35 hover:text-white/60",
+						)}
+					>
+						LOOP
+					</button>
+					<Button variant="ghost" size="icon" className="size-6">
+						<PlusIcon className="size-3" />
+					</Button>
+				</div>
 			</div>
 
 			<div className="flex flex-1 overflow-hidden">
@@ -215,6 +258,7 @@ export function ChannelRack() {
 										color={trackColor}
 										stepIndex={si}
 										channel={ch}
+										withinLength={si < activeSteps}
 										onStepMouseDown={handleStepMouseDown}
 										onStepMouseEnter={handleStepMouseEnter}
 									/>

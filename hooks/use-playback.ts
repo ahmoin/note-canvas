@@ -19,6 +19,8 @@ export function usePlayback() {
 		pianoNotes,
 		tracks,
 		trackVolumes,
+		patternLengthBars,
+		trackLoop,
 		setCurrentTick,
 		setPlayStartAudioTime,
 	} = useDAWStore();
@@ -35,6 +37,10 @@ export function usePlayback() {
 	tracksRef.current = tracks;
 	const trackVolumesRef = React.useRef(trackVolumes);
 	trackVolumesRef.current = trackVolumes;
+	const patternLengthBarsRef = React.useRef(patternLengthBars);
+	patternLengthBarsRef.current = patternLengthBars;
+	const trackLoopRef = React.useRef(trackLoop);
+	trackLoopRef.current = trackLoop;
 
 	const startRef = React.useRef<{
 		audioTime: number;
@@ -72,18 +78,25 @@ export function usePlayback() {
 			while (s.nextStepTime < ac.currentTime + LOOKAHEAD) {
 				const step = s.nextStep;
 				const time = s.nextStepTime;
-				const isDrumTick = step % SUBS_PER_STEP === 0;
-				const drumStep = Math.floor(step / SUBS_PER_STEP) % STEPS;
 
 				patternsRef.current.forEach((pat, ti) => {
 					if (mutedRef.current[ti]) return;
 					const dest = getTrackDest(ti);
 					const subtype = tracksRef.current[ti]?.subtype;
+					const lengthBars = patternLengthBarsRef.current[ti] ?? 16;
+					const loopEnabled = trackLoopRef.current[ti] ?? true;
+					// 16 subs per visual bar (PIANO_STEPS=256 / BARS=16)
+					const pianoSubs = lengthBars * 16;
+					if (!loopEnabled && step >= pianoSubs) return;
+					const pianoStep = step % pianoSubs;
+					const isDrumTick = pianoStep % SUBS_PER_STEP === 0;
+					const drumStep = Math.floor(pianoStep / SUBS_PER_STEP);
+
 					if (subtype === "wave") {
 						const notes = pianoRef.current[ti];
 						if (notes) {
 							notes.forEach((note) => {
-								if (note.start === step % PIANO_STEPS) {
+								if (note.start === pianoStep) {
 									const durationSecs = note.duration * subDur;
 									const vel = note.velocity / 127;
 									playPianoNote(note.row, time, durationSecs, dest, vel);
@@ -97,7 +110,7 @@ export function usePlayback() {
 					}
 				});
 
-				s.nextStep = (step + 1) % PIANO_STEPS;
+				s.nextStep = step + 1;
 				s.nextStepTime += subDur;
 			}
 		}, INTERVAL);

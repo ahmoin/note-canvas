@@ -81,6 +81,10 @@ interface DAWState {
 	toggleMuteTrack: (track: number) => void;
 	addTrack: (name: string, type: string, subtype?: TrackSubtype) => void;
 	pianoNotes: Record<number, PianoNote[]>;
+	patternLengthBars: number[];
+	trackLoop: boolean[];
+	setPatternLength: (trackIndex: number, bars: number) => void;
+	setTrackLoop: (trackIndex: number, loop: boolean) => void;
 	addNote: (trackIndex: number, note: PianoNote) => void;
 	removeNote: (trackIndex: number, noteIndex: number) => void;
 	resizeNote: (trackIndex: number, noteIndex: number, duration: number) => void;
@@ -115,6 +119,8 @@ export const useDAWStore = create<DAWState>((set) => ({
 	soloTrack: null,
 	mutedTracks: Array(DEFAULT_TRACKS.length).fill(false),
 	pianoNotes: { 1: makeDefaultGuitarNotes() },
+	patternLengthBars: Array(DEFAULT_TRACKS.length).fill(16),
+	trackLoop: Array(DEFAULT_TRACKS.length).fill(true),
 	masterVolume: 82.5,
 	masterPan: 0,
 	setActiveView: (view) => set({ activeView: view }),
@@ -208,6 +214,18 @@ export const useDAWStore = create<DAWState>((set) => ({
 			};
 			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: notes } };
 		}),
+	setPatternLength: (trackIndex, bars) =>
+		set((s) => {
+			const next = [...s.patternLengthBars];
+			next[trackIndex] = bars;
+			return { patternLengthBars: next };
+		}),
+	setTrackLoop: (trackIndex, loop) =>
+		set((s) => {
+			const next = [...s.trackLoop];
+			next[trackIndex] = loop;
+			return { trackLoop: next };
+		}),
 	setMasterVolume: (vol) => set({ masterVolume: vol }),
 	setMasterPan: (pan) => set({ masterPan: pan }),
 	addTrack: (name, type, subtype = "sound") =>
@@ -217,5 +235,7 @@ export const useDAWStore = create<DAWState>((set) => ({
 			trackVolumes: [...s.trackVolumes, 82.5],
 			trackPans: [...s.trackPans, 0],
 			mutedTracks: [...s.mutedTracks, false],
+			patternLengthBars: [...s.patternLengthBars, 16],
+			trackLoop: [...s.trackLoop, true],
 		})),
 }));
