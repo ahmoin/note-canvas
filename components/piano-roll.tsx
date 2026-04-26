@@ -19,7 +19,7 @@ const BEAT_W = 32;
 const SUB_W = BEAT_W / SUBS;
 const TOTAL_SUBS = BARS * BPB * SUBS;
 const TOTAL_W = BARS * BPB * BEAT_W;
-const SNAP = 4;
+const SNAP = 2;
 const NOTE_LEN = 8;
 const STEM_MAX_H = 34;
 const DEFAULT_VEL = 100;
@@ -212,12 +212,14 @@ const GridRow = React.memo(function GridRow({
 	trackNotes,
 	trackVelocities,
 	color,
+	selectedNoteIdx,
 }: {
 	ri: number;
 	note: string;
 	trackNotes: PianoNote[];
 	trackVelocities: Record<number, number>;
 	color: string;
+	selectedNoteIdx: number | null;
 }) {
 	const isBlack = BLACK.has(note);
 	const isC = note === "C";
@@ -245,6 +247,7 @@ const GridRow = React.memo(function GridRow({
 				const w = n.duration * SUB_W;
 				const vel = trackVelocities[n.start] ?? DEFAULT_VEL;
 				const opacity = vel / 127;
+				const isSelected = trackNotes.indexOf(n) === selectedNoteIdx;
 				return (
 					<div
 						key={i}
@@ -261,7 +264,9 @@ const GridRow = React.memo(function GridRow({
 							alignItems: "center",
 							paddingLeft: 3,
 							pointerEvents: "none",
-							boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.25)`,
+							boxShadow: isSelected
+								? `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.25), 0 0 0 1.5px white`
+								: `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.25)`,
 							opacity,
 						}}
 					>
@@ -295,6 +300,7 @@ export function PianoRoll() {
 		addNote,
 		removeNote,
 		resizeNote,
+		moveNote,
 		noteVelocities,
 		setNoteVelocity,
 		isPlaying,
@@ -368,9 +374,21 @@ export function PianoRoll() {
 		[activeTrack, setNoteVelocity],
 	);
 
+	const [selectedNoteIdx, setSelectedNoteIdx] = React.useState<number | null>(
+		null,
+	);
+
 	const dragRef = React.useRef<{
 		noteIndex: number;
 		originalStart: number;
+	} | null>(null);
+
+	const moveRef = React.useRef<{
+		noteIndex: number;
+		originalRow: number;
+		originalStart: number;
+		startX: number;
+		startY: number;
 	} | null>(null);
 
 	const handleGridPointerDown = React.useCallback(
@@ -393,22 +411,66 @@ export function PianoRoll() {
 					startSub < n.start + n.duration,
 			);
 
+			if (e.button === 2) {
+				if (existingIdx >= 0) {
+					removeNote(activeTrack, existingIdx);
+					if (selectedNoteIdx === existingIdx) setSelectedNoteIdx(null);
+				}
+				return;
+			}
+
 			if (existingIdx >= 0) {
-				removeNote(activeTrack, existingIdx);
-				dragRef.current = null;
+				setSelectedNoteIdx(existingIdx);
+				const note = trackNotes[existingIdx];
+				moveRef.current = {
+					noteIndex: existingIdx,
+					originalRow: note.row,
+					originalStart: note.start,
+					startX: x,
+					startY: y,
+				};
 			} else {
 				const newIndex = trackNotes.length;
 				addNote(activeTrack, { row: ri, start: startSub, duration: NOTE_LEN });
 				const ac = getAudioCtx();
 				playPianoNote(ri, ac.currentTime);
 				dragRef.current = { noteIndex: newIndex, originalStart: startSub };
+				setSelectedNoteIdx(null);
 			}
 		},
-		[activeTrack, trackNotes, addNote, removeNote, rows.length],
+		[
+			activeTrack,
+			trackNotes,
+			addNote,
+			removeNote,
+			rows.length,
+			selectedNoteIdx,
+		],
 	);
 
 	const handleGridPointerMove = React.useCallback(
 		(e: React.PointerEvent<HTMLDivElement>) => {
+			const move = moveRef.current;
+			if (move) {
+				const rect = e.currentTarget.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const y = e.clientY - rect.top;
+				const newRow = Math.max(
+					0,
+					Math.min(
+						rows.length - 1,
+						move.originalRow + Math.round((y - move.startY) / ROW_H),
+					),
+				);
+				const rawStart =
+					move.originalStart + Math.round((x - move.startX) / SUB_W);
+				const newStart = Math.max(
+					0,
+					Math.min(TOTAL_SUBS - 1, Math.floor(rawStart / SNAP) * SNAP),
+				);
+				moveNote(activeTrack, move.noteIndex, newRow, newStart);
+				return;
+			}
 			const drag = dragRef.current;
 			if (!drag) return;
 			const rect = e.currentTarget.getBoundingClientRect();
@@ -424,11 +486,12 @@ export function PianoRoll() {
 			);
 			resizeNote(activeTrack, drag.noteIndex, snappedDuration);
 		},
-		[activeTrack, resizeNote],
+		[activeTrack, resizeNote, moveNote, rows.length],
 	);
 
 	const handleGridPointerUp = React.useCallback(() => {
 		dragRef.current = null;
+		moveRef.current = null;
 	}, []);
 
 	return (
@@ -539,6 +602,7 @@ export function PianoRoll() {
 							onPointerDown={handleGridPointerDown}
 							onPointerMove={handleGridPointerMove}
 							onPointerUp={handleGridPointerUp}
+							onContextMenu={(e) => e.preventDefault()}
 						>
 							{rows.map(({ note }, ri) => (
 								<GridRow
@@ -548,6 +612,7 @@ export function PianoRoll() {
 									trackNotes={trackNotes}
 									trackVelocities={trackVelocities}
 									color={color}
+									selectedNoteIdx={selectedNoteIdx}
 								/>
 							))}
 

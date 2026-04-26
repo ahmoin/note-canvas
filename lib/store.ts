@@ -79,6 +79,12 @@ interface DAWState {
 	addNote: (trackIndex: number, note: PianoNote) => void;
 	removeNote: (trackIndex: number, noteIndex: number) => void;
 	resizeNote: (trackIndex: number, noteIndex: number, duration: number) => void;
+	moveNote: (
+		trackIndex: number,
+		noteIndex: number,
+		newRow: number,
+		newStart: number,
+	) => void;
 	noteVelocities: Record<number, Record<number, number>>;
 	setNoteVelocity: (trackIndex: number, sub: number, velocity: number) => void;
 	masterVolume: number;
@@ -176,6 +182,13 @@ export const useDAWStore = create<DAWState>((set) => ({
 				...notes[noteIndex],
 				duration: Math.max(1, duration),
 			};
+			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: notes } };
+		}),
+	moveNote: (trackIndex, noteIndex, newRow, newStart) =>
+		set((s) => {
+			const notes = [...(s.pianoNotes[trackIndex] ?? [])];
+			if (noteIndex < 0 || noteIndex >= notes.length) return s;
+			notes[noteIndex] = { ...notes[noteIndex], row: newRow, start: newStart };
 			return { pianoNotes: { ...s.pianoNotes, [trackIndex]: notes } };
 		}),
 	setNoteVelocity: (trackIndex, sub, velocity) =>
