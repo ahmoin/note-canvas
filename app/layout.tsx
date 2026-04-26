@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = {
+	title: "Note Canvas",
+	description:
+		"A browser based DAW for composing and playing back music. Supports drum sequencing and melodic instruments with a piano roll editor.",
+};
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
