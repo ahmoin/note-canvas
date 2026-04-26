@@ -49,7 +49,7 @@ const VelocityHandle = React.memo(function VelocityHandle({
 	onVelocityChange: (sub: number, vel: number) => void;
 }) {
 	const stemH = Math.round((velocity / 127) * STEM_MAX_H);
-	const cx = sub * SUB_W + Math.round((NOTE_LEN * SUB_W) / 2) - 3;
+	const cx = sub * SUB_W + Math.round((NOTE_LEN * SUB_W) / 2) - 6;
 	const startRef = React.useRef<{ y: number; vel: number } | null>(null);
 
 	return (
@@ -58,11 +58,11 @@ const VelocityHandle = React.memo(function VelocityHandle({
 				position: "absolute",
 				left: cx,
 				bottom: 3,
-				width: 6,
-				height: 6 + stemH,
+				width: 12,
+				height: 4 + stemH,
 				display: "flex",
 				flexDirection: "column",
-				alignItems: "center",
+				alignItems: "flex-start",
 				cursor: "ns-resize",
 				userSelect: "none",
 			}}
@@ -89,9 +89,9 @@ const VelocityHandle = React.memo(function VelocityHandle({
 		>
 			<div
 				style={{
-					width: 6,
-					height: 6,
-					borderRadius: "50%",
+					width: 12,
+					height: 4,
+					borderRadius: 2,
 					backgroundColor: color,
 					flexShrink: 0,
 				}}
@@ -102,6 +102,7 @@ const VelocityHandle = React.memo(function VelocityHandle({
 						width: 2,
 						height: stemH,
 						backgroundColor: `color-mix(in srgb, ${color} 70%, transparent)`,
+						marginLeft: 1,
 					}}
 				/>
 			)}
@@ -456,7 +457,7 @@ export function PianoRoll() {
 				style={{ borderColor: "rgba(255,255,255,0.08)" }}
 			>
 				<span className="text-xs font-medium" style={{ color: vars.text }}>
-					Piano Roll — {tracks[activeTrack]?.name ?? "No Track"}
+					Piano Roll - {tracks[activeTrack]?.name ?? "No Track"}
 				</span>
 			</div>
 
